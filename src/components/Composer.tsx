@@ -1,6 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Copy,
+  Download,
+  ExternalLink,
+  Settings2,
+  Sparkles,
+} from "lucide-react";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
+import { Divider } from "@astryxdesign/core/Divider";
+import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Heading } from "@astryxdesign/core/Heading";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Section } from "@astryxdesign/core/Section";
+import { Text } from "@astryxdesign/core/Text";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Thumbnail } from "@astryxdesign/core/Thumbnail";
+import { Token } from "@astryxdesign/core/Token";
+import { VStack } from "@astryxdesign/core/VStack";
 import { captionStats } from "@/lib/caption";
 import type { DraftContent, NewsItem, PostSettings } from "@/lib/types";
 
@@ -22,21 +44,16 @@ interface ComposerProps {
   cached: boolean;
 }
 
-function CopyButton({
-  value,
-  label,
-  className = "",
-}: {
-  value: string;
-  label: string;
-  className?: string;
-}) {
+function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   async function copy() {
     try {
@@ -50,41 +67,13 @@ function CopyButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      label={copied ? "Đã sao chép" : label}
+      variant={copied ? "secondary" : "primary"}
+      icon={copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+      isDisabled={!value}
       onClick={copy}
-      disabled={!value}
-      className={`font-mono text-[11px] uppercase tracking-wider px-3 py-2 rounded-sm transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
-    >
-      {copied ? "Đã chép ✓" : label}
-    </button>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft mb-1">
-        {label}
-      </span>
-      <input
-        type="text"
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full bg-paper-hi border border-ink/15 rounded-sm px-2.5 py-2 text-sm text-ink placeholder:text-ink-soft/60"
-      />
-    </label>
+    />
   );
 }
 
@@ -107,255 +96,230 @@ export default function Composer({
 }: ComposerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const stats = captionStats(caption, draft);
-
-  // The guide caps the body at 200 words and targets 60–150.
   const overLimit = stats.bodyWords !== null && stats.bodyWords > 200;
   const offTarget =
-    stats.bodyWords !== null && !overLimit && (stats.bodyWords < 60 || stats.bodyWords > 150);
+    stats.bodyWords !== null &&
+    !overLimit &&
+    (stats.bodyWords < 60 || stats.bodyWords > 150);
 
   if (!item) {
     return (
-      <div className="h-full grid place-items-center px-8 py-16 text-center">
-        <div className="max-w-sm">
-          <p className="font-display text-2xl text-ink font-semibold tracking-tight">
-            Chọn một tin bên trái
-          </p>
-          <p className="mt-2 text-sm text-ink-soft leading-relaxed">
-            Bảng bên trái xếp 10 tin mới nhất theo thời gian đăng. Màu tím là mới
-            nhất, rồi xanh lá, vàng, xám.
-          </p>
-          <p className="mt-3 text-[12px] text-ink-soft/80 leading-relaxed">
-            Chọn tin không tốn token. AI chỉ chạy khi bạn bấm nút soạn.
-          </p>
-        </div>
-      </div>
+      <VStack height="100%" minHeight={480} hAlign="center" vAlign="center" padding={6}>
+        <EmptyState
+          headingLevel={2}
+          title="Chọn một tin để bắt đầu"
+          description="Mở một mục trong hàng đợi. AI chỉ chạy khi bạn chủ động bấm Soạn caption."
+          icon={<Sparkles size={32} />}
+        />
+      </VStack>
     );
   }
 
   return (
-    <div className="px-5 py-5 sm:px-7 sm:py-6 max-w-2xl mx-auto">
-      {/* Source card: everything the admin needs to grab, including the image. */}
-      <div className="flex gap-4">
-        {item.imageUrl ? (
-          <a href={item.imageUrl} target="_blank" rel="noreferrer" className="shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-sm border border-ink/10"
+    <VStack hAlign="center" padding={5}>
+      <VStack width="100%" maxWidth={820} gap={4}>
+        <Section variant="muted" padding={4}>
+          <HStack gap={4} vAlign="start">
+            <Thumbnail
+              src={item.imageUrl ?? undefined}
+              alt={item.imageUrl ? `Ảnh minh hoạ: ${item.title}` : undefined}
+              label={item.title}
+              onClick={
+                item.imageUrl
+                  ? () => window.open(item.imageUrl ?? "", "_blank", "noopener,noreferrer")
+                  : undefined
+              }
             />
-          </a>
+            <VStack gap={2} width="100%">
+              <HStack gap={1.5} wrap="wrap" vAlign="center">
+                <Token label={item.sourceName} size="sm" color="gray" />
+                {item.author ? (
+                  <Text type="supporting" color="secondary">
+                    {item.author}
+                  </Text>
+                ) : null}
+              </HStack>
+              <Heading level={2}>{item.title}</Heading>
+              <HStack gap={2} wrap="wrap">
+                <Button
+                  label="Mở bài gốc"
+                  variant="secondary"
+                  icon={<ExternalLink size={16} aria-hidden />}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+                {item.imageUrl ? (
+                  <CopyButton value={item.imageUrl} label="Sao chép link ảnh" />
+                ) : null}
+              </HStack>
+            </VStack>
+          </HStack>
+        </Section>
+
+        <Section variant="transparent" padding={0}>
+          <Text type="body" color="secondary" display="block">
+            {item.excerpt}
+          </Text>
+        </Section>
+
+        <Divider />
+
+        <HStack gap={2} wrap="wrap" vAlign="center" hAlign="between">
+          <HStack gap={2} wrap="wrap">
+            <Button
+              label={
+                caption ? "Soạn lại caption (tốn token)" : "Soạn caption tiếng Việt"
+              }
+              variant="primary"
+              icon={<Sparkles size={16} aria-hidden />}
+              isLoading={generating}
+              isDisabled={generating}
+              onClick={onGenerate}
+            />
+            <Button
+              label={showSettings ? "Ẩn tuỳ chỉnh" : "Tuỳ chỉnh bài viết"}
+              variant="secondary"
+              icon={<Settings2 size={16} aria-hidden />}
+              onClick={() => setShowSettings((value) => !value)}
+            />
+          </HStack>
+          <HStack gap={1.5} wrap="wrap">
+            {cached ? <Token label="Đã lưu trong phiên" size="sm" color="green" /> : null}
+            {model ? <Token label={model} size="sm" color="gray" /> : null}
+          </HStack>
+        </HStack>
+
+        {showSettings ? (
+          <Section variant="muted" padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Tuỳ chỉnh đầu ra</Heading>
+              <TextInput
+                label="Credit soạn bài"
+                value={settings.author}
+                placeholder="Tên admin, ví dụ Sennar"
+                onChange={(author) => onSettingsChange({ ...settings, author })}
+              />
+              <TextInput
+                label="Hashtag cố định"
+                value={settings.coreHashtags}
+                description="AI sẽ thêm 3–6 hashtag theo chủ đề sau các tag này."
+                onChange={(coreHashtags) =>
+                  onSettingsChange({ ...settings, coreHashtags })
+                }
+              />
+              <VStack gap={1.5}>
+                <Text type="label">Đường phân cách</Text>
+                <HStack gap={2} wrap="wrap">
+                  <Button
+                    label="Dấu gạch dài"
+                    variant={
+                      settings.divider === "em-dash" ? "primary" : "secondary"
+                    }
+                    onClick={() =>
+                      onSettingsChange({ ...settings, divider: "em-dash" })
+                    }
+                  >
+                    ————————
+                  </Button>
+                  <Button
+                    label="Dấu gạch dưới"
+                    variant={
+                      settings.divider === "underscore" ? "primary" : "secondary"
+                    }
+                    onClick={() =>
+                      onSettingsChange({ ...settings, divider: "underscore" })
+                    }
+                  >
+                    __________
+                  </Button>
+                </HStack>
+              </VStack>
+              <TextArea
+                label="Dặn thêm cho AI"
+                isOptional
+                value={extraInstructions}
+                rows={3}
+                placeholder="Ví dụ: nhấn mạnh chiến thuật lốp, bỏ phần tiểu sử."
+                onChange={onExtraInstructionsChange}
+              />
+              <CheckboxInput
+                label="Kèm link trong dòng Nguồn:"
+                description="Tên nguồn luôn được ghi. Link có thể thay đổi cách Facebook tạo ảnh xem trước."
+                value={includeSourceUrl}
+                onChange={onIncludeSourceUrlChange}
+              />
+            </VStack>
+          </Section>
         ) : null}
 
-        <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-ink-soft">
-            {item.sourceName}
-            {item.author ? ` · ${item.author}` : ""}
-          </p>
-          <h2 className="mt-1 font-display text-lg sm:text-xl leading-tight text-ink font-semibold">
-            {item.title}
-          </h2>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <a
-              href={item.link}
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono text-[11px] uppercase tracking-wider px-2.5 py-1.5 rounded-sm bg-ink/8 text-ink hover:bg-ink/15 transition-colors"
-            >
-              Mở bài gốc ↗
-            </a>
-            {item.imageUrl ? (
-              <CopyButton
-                value={item.imageUrl}
-                label="Chép link ảnh"
-                className="bg-ink/8 text-ink hover:bg-ink/15 !py-1.5 !px-2.5"
-              />
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-4 text-[13px] leading-relaxed text-ink-soft border-l-2 border-ink/15 pl-3">
-        {item.excerpt}
-      </p>
-
-      {/* Generate — the only thing here that spends tokens. */}
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={generating}
-          className="font-display font-semibold text-sm tracking-tight px-5 py-2.5 rounded-sm bg-flag text-white hover:brightness-110 disabled:opacity-60 disabled:cursor-wait transition-all duration-150"
-        >
-          {generating
-            ? "Đang soạn…"
-            : caption
-              ? "Soạn lại (tốn token)"
-              : "Soạn caption tiếng Việt"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowSettings((v) => !v)}
-          aria-expanded={showSettings}
-          className="font-mono text-[11px] uppercase tracking-wider px-3 py-2.5 rounded-sm text-ink-soft hover:text-ink transition-colors"
-        >
-          {showSettings ? "Ẩn tuỳ chỉnh" : "Tuỳ chỉnh"}
-        </button>
-
-        <span className="ml-auto flex items-center gap-2">
-          {cached ? (
-            <span
-              className="font-mono text-[10px] uppercase tracking-wider text-ink-soft/70"
-              title="Lấy lại từ phiên này — không gọi lại AI"
-            >
-              đã lưu
-            </span>
-          ) : null}
-          {model ? (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft/70">
-              {model}
-            </span>
-          ) : null}
-        </span>
-      </div>
-
-      {showSettings ? (
-        <div className="mt-4 p-4 rounded-sm bg-ink/[0.04] border border-ink/10 space-y-3">
-          <Field
-            label="Credit soạn bài"
-            value={settings.author}
-            placeholder="Tên admin, ví dụ Sennar"
-            onChange={(author) => onSettingsChange({ ...settings, author })}
+        {error ? (
+          <Banner
+            status="error"
+            title="Không thể soạn caption"
+            description={error}
           />
-          <Field
-            label="Hashtag cố định"
-            value={settings.coreHashtags}
-            onChange={(coreHashtags) => onSettingsChange({ ...settings, coreHashtags })}
-          />
-          <p className="text-[11px] text-ink-soft leading-relaxed -mt-1.5">
-            AI tự thêm 3–6 hashtag theo chủ đề sau các tag cố định này.
-          </p>
+        ) : null}
 
-          <fieldset>
-            <legend className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft mb-1.5">
-              Đường phân cách
-            </legend>
-            <div className="flex gap-2">
-              {(
-                [
-                  ["em-dash", "————————"],
-                  ["underscore", "__________"],
-                ] as const
-              ).map(([value, preview]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={settings.divider === value}
-                  onClick={() => onSettingsChange({ ...settings, divider: value })}
-                  className={`font-mono text-[11px] px-3 py-2 rounded-sm border transition-colors ${
-                    settings.divider === value
-                      ? "border-ink/40 bg-ink/10 text-ink"
-                      : "border-ink/15 text-ink-soft hover:text-ink"
-                  }`}
+        {caption ? (
+          <Section variant="section" padding={4}>
+            <VStack gap={3}>
+              <HStack gap={2} wrap="wrap" hAlign="between" vAlign="center">
+                <VStack gap={0.5}>
+                  <Heading level={3}>Bản nháp Facebook</Heading>
+                  <Text type="supporting" color="secondary">
+                    Có thể sửa trực tiếp trước khi đăng.
+                  </Text>
+                </VStack>
+                <Text
+                  type="supporting"
+                  color={overLimit ? "accent" : "secondary"}
+                  hasTabularNumbers
                 >
-                  {preview}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <label className="block">
-            <span className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft mb-1">
-              Dặn thêm cho AI (tuỳ chọn)
-            </span>
-            <textarea
-              value={extraInstructions}
-              rows={2}
-              placeholder="Ví dụ: nhấn mạnh phần chiến thuật lốp, bỏ phần tiểu sử."
-              onChange={(event) => onExtraInstructionsChange(event.target.value)}
-              className="w-full bg-paper-hi border border-ink/15 rounded-sm px-2.5 py-2 text-sm text-ink placeholder:text-ink-soft/60 resize-y"
-            />
-          </label>
-
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeSourceUrl}
-              onChange={(event) => onIncludeSourceUrlChange(event.target.checked)}
-              className="mt-0.5 accent-flag w-4 h-4"
-            />
-            <span className="text-[13px] text-ink leading-snug">
-              Kèm link vào dòng <span className="font-mono">Nguồn:</span>
-              <span className="block text-ink-soft text-[12px]">
-                Tên nguồn luôn được ghi. Bật link sẽ đổi cách Facebook hiện ảnh
-                xem trước.
-              </span>
-            </span>
-          </label>
-        </div>
-      ) : null}
-
-      {error ? (
-        <p
-          role="alert"
-          className="mt-4 text-[13px] leading-relaxed text-flag bg-flag/8 border border-flag/25 rounded-sm px-3 py-2.5"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {/* The caption itself — editable, because admins always tweak. */}
-      {caption ? (
-        <div className="mt-5">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft">
-              Caption · sửa thoải mái trước khi đăng
-            </span>
-            <span
-              className={`font-mono text-[10px] tabular-nums ${
-                overLimit
-                  ? "text-flag"
-                  : offTarget
-                    ? "text-ink-soft"
-                    : "text-ink-soft/70"
-              }`}
-              title="Đếm từ phần thân bài — mục tiêu 60–150 từ, tối đa 200"
-            >
-              {stats.bodyWords !== null ? `thân bài ${stats.bodyWords} từ · ` : ""}
-              {stats.characters} ký tự
-            </span>
-          </div>
-
-          <textarea
-            value={caption}
-            onChange={(event) => onCaptionChange(event.target.value)}
-            rows={20}
-            spellCheck={false}
-            className="w-full bg-paper-hi border border-ink/15 rounded-sm px-4 py-3.5 text-[14.5px] leading-[1.65] text-ink resize-y font-body"
-          />
-
-          <div className="mt-2 flex flex-wrap gap-2">
-            <CopyButton
-              value={caption}
-              label="Chép caption"
-              className="bg-ink text-paper hover:bg-ink/85"
-            />
-            {item.imageUrl ? (
-              <a
-                href={item.imageUrl}
-                target="_blank"
-                rel="noreferrer"
-                download
-                className="font-mono text-[11px] uppercase tracking-wider px-3 py-2 rounded-sm bg-ink/8 text-ink hover:bg-ink/15 transition-colors"
-              >
-                Tải ảnh ↓
-              </a>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-    </div>
+                  {stats.bodyWords !== null
+                    ? `Thân bài ${stats.bodyWords} từ · `
+                    : ""}
+                  {stats.characters} ký tự
+                </Text>
+              </HStack>
+              <TextArea
+                label="Caption"
+                isLabelHidden
+                value={caption}
+                rows={22}
+                hasSpellCheck={false}
+                status={
+                  overLimit
+                    ? {
+                        type: "error",
+                        message: "Thân bài vượt giới hạn tối đa 200 từ.",
+                      }
+                    : offTarget
+                      ? {
+                          type: "warning",
+                          message: "Mục tiêu đề xuất là 60–150 từ.",
+                        }
+                      : undefined
+                }
+                onChange={onCaptionChange}
+              />
+              <HStack gap={2} wrap="wrap">
+                <CopyButton value={caption} label="Sao chép caption" />
+                {item.imageUrl ? (
+                  <Button
+                    label="Mở ảnh để tải"
+                    variant="secondary"
+                    icon={<Download size={16} aria-hidden />}
+                    href={item.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                ) : null}
+              </HStack>
+            </VStack>
+          </Section>
+        ) : null}
+      </VStack>
+    </VStack>
   );
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Archivo, Be_Vietnam_Pro, IBM_Plex_Mono } from "next/font/google";
-import "./globals.css";
+import "@astryxdesign/core/reset.css";
+import "@astryxdesign/core/astryx.css";
+import "@/theme/sum-theme.ts/sum-workspace.css";
 
 const archivo = Archivo({
   variable: "--font-archivo",
@@ -25,7 +27,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SUM Pit Wall — bàn biên tập caption mô tô thể thao",
+  title: "SUM Editorial — Motorsport Content Desk",
   description:
     "Lấy tin F1 và mô tô thể thao mới nhất, soạn thành caption Facebook tiếng Việt theo văn phong SUM để admin chỉnh và đăng.",
 };
@@ -38,9 +40,10 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${archivo.variable} ${beVietnam.variable} ${plexMono.variable} h-full antialiased`}
+      data-theme="light"
+      className={`${archivo.variable} ${beVietnam.variable} ${plexMono.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

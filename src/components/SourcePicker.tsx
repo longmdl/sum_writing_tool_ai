@@ -1,5 +1,11 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+import { Banner } from "@astryxdesign/core/Banner";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Section } from "@astryxdesign/core/Section";
+import { Text } from "@astryxdesign/core/Text";
+import { Token } from "@astryxdesign/core/Token";
 import type { Source, SourceId } from "@/lib/types";
 
 interface SourcePickerProps {
@@ -13,59 +19,41 @@ export default function SourcePicker({
   enabled,
   onToggle,
 }: SourcePickerProps) {
+  const hasRestrictedSource = enabled.some(
+    (id) => sources.find((source) => source.id === id)?.policy.blocksAiCrawlers,
+  );
+
   return (
-    <fieldset className="px-3 py-3 border-b border-guardrail/40">
-      <legend className="sr-only">Nguồn tin</legend>
-      <div className="flex flex-wrap gap-1.5">
+    <Section variant="muted" padding={3} dividers={["bottom"]}>
+      <HStack gap={1.5} wrap="wrap" vAlign="center">
+        <Text type="label" color="secondary">
+          Nguồn theo dõi
+        </Text>
         {sources.map((source) => {
-          const on = enabled.includes(source.id);
+          const isEnabled = enabled.includes(source.id);
           const restricted = source.policy.blocksAiCrawlers;
 
           return (
-            <button
+            <Token
               key={source.id}
-              type="button"
-              role="switch"
-              aria-checked={on}
+              label={source.name}
+              size="sm"
+              color={isEnabled ? "green" : "gray"}
+              icon={restricted ? <AlertTriangle size={14} aria-hidden /> : undefined}
+              description={`${isEnabled ? "Đang bật" : "Đang tắt"}. ${source.policy.note}`}
               onClick={() => onToggle(source.id)}
-              title={source.policy.note}
-              className={`font-mono text-[10.5px] uppercase tracking-wider px-2.5 py-1.5 rounded-sm border transition-colors duration-150 ${
-                on
-                  ? "border-guardrail bg-carbon-hi text-white"
-                  : "border-guardrail/50 text-dim hover:text-white hover:border-guardrail"
-              }`}
-            >
-              <span
-                aria-hidden
-                className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
-                style={{
-                  background: on ? "var(--color-green)" : "var(--color-guardrail)",
-                }}
-              />
-              {source.name}
-              {restricted ? (
-                <span
-                  className="ml-1.5 text-yellow"
-                  title="Nhà xuất bản giới hạn việc dùng cho AI — luôn ghi nguồn"
-                >
-                  ▲
-                </span>
-              ) : null}
-            </button>
+            />
           );
         })}
-      </div>
+      </HStack>
 
-      {enabled.some(
-        (id) => sources.find((s) => s.id === id)?.policy.blocksAiCrawlers,
-      ) ? (
-        <p className="mt-2.5 text-[11px] leading-relaxed text-dim">
-          <span className="text-yellow">▲</span> Nguồn này cho phép dùng để tham
-          khảo nhưng cấm huấn luyện AI. Công cụ chỉ tóm tắt từ phần trích RSS và
-          luôn ghi <span className="font-mono">Nguồn:</span> — giữ nguyên dòng đó
-          khi đăng.
-        </p>
+      {hasRestrictedSource ? (
+        <Banner
+          status="warning"
+          title="Có nguồn giới hạn sử dụng AI"
+          description="Công cụ chỉ dùng phần trích RSS để tham khảo và luôn giữ dòng Nguồn: trong bài đăng."
+        />
       ) : null}
-    </fieldset>
+    </Section>
   );
 }

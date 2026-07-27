@@ -1,9 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
+import { AppShell } from "@astryxdesign/core/AppShell";
+import { Badge } from "@astryxdesign/core/Badge";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { Heading } from "@astryxdesign/core/Heading";
+import { HStack } from "@astryxdesign/core/HStack";
+import {
+  Layout,
+  LayoutContent,
+  LayoutPanel,
+} from "@astryxdesign/core/Layout";
+import { Section } from "@astryxdesign/core/Section";
+import { StackItem } from "@astryxdesign/core/Stack";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
+import { Text } from "@astryxdesign/core/Text";
+import { Theme } from "@astryxdesign/core/theme";
+import { Toolbar } from "@astryxdesign/core/Toolbar";
+import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
+import { useMediaQuery } from "@astryxdesign/core/hooks";
+import { VStack } from "@astryxdesign/core/VStack";
 import Composer from "./Composer";
 import FeedBoard from "./FeedBoard";
 import SourcePicker from "./SourcePicker";
+import { sumWorkspaceTheme } from "@/theme/sum-theme.ts/sum-workspace";
 import {
   getServerSnapshot,
   getSnapshot,
@@ -52,6 +74,7 @@ async function fetchFeed(sourceIds: SourceId[]): Promise<FeedResponse> {
 }
 
 export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps) {
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const prefs = useSyncExternalStore(
     subscribe,
     () => getSnapshot(defaultSourceIds),
@@ -218,84 +241,160 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     });
   }, [fetchedAt]);
 
-  return (
-    <main className="flex flex-col lg:flex-row lg:h-screen lg:overflow-hidden">
-      {/* Timing board — incoming data. */}
-      <section
-        aria-label="Bảng tin mới nhất"
-        className="lg:w-[420px] xl:w-[460px] shrink-0 bg-asphalt border-b lg:border-b-0 lg:border-r border-guardrail/60 flex flex-col lg:h-screen"
-      >
-        <header className="px-3 pt-4 pb-3 border-b border-guardrail/40">
-          <div className="flex items-baseline justify-between gap-3">
-            <h1 className="font-display text-[15px] font-bold tracking-[0.14em] uppercase text-white">
-              SUM<span className="text-flag"> / </span>Pit Wall
-            </h1>
-            <button
-              type="button"
-              onClick={refresh}
-              disabled={loading}
-              className="font-mono text-[10px] uppercase tracking-wider text-dim hover:text-white disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Đang tải…" : "Làm mới"}
-            </button>
-          </div>
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-dim">
-            10 tin mới nhất
-            {updatedLabel ? ` · cập nhật ${updatedLabel}` : ""}
-          </p>
-        </header>
-
-        <SourcePicker
-          sources={sources}
-          enabled={prefs.sources}
-          onToggle={toggleSource}
-        />
-
-        {feedError ? (
-          <p role="alert" className="px-3 py-3 text-[13px] text-flag">
-            {feedError}
-          </p>
-        ) : null}
-
-        {feedErrors.length > 0 ? (
-          <p className="px-3 py-2 text-[11px] text-yellow border-b border-guardrail/40">
-            Không tải được: {feedErrors.map((e) => e.sourceName).join(", ")}
-          </p>
-        ) : null}
-
-        <div className="board-scroll flex-1 lg:overflow-y-auto">
-          <FeedBoard
-            items={items}
-            selectedId={selected?.id ?? null}
-            onSelect={selectItem}
-            loading={loading}
+  const feedContent = (
+    <VStack height="100%" gap={0}>
+      <Toolbar
+        label="Công cụ hàng đợi tin"
+        size="md"
+        variant="section"
+        startContent={
+          <VStack gap={0}>
+            <Heading level={1}>Hàng đợi tin</Heading>
+            <Text type="supporting" color="secondary">
+              10 tin motorsport mới nhất
+              {updatedLabel ? ` · cập nhật ${updatedLabel}` : ""}
+            </Text>
+          </VStack>
+        }
+        endContent={
+          <Button
+            label="Làm mới"
+            variant="ghost"
+            icon={<RefreshCw size={16} aria-hidden />}
+            isIconOnly={!isDesktop}
+            isLoading={loading}
+            isDisabled={loading}
+            onClick={refresh}
           />
-        </div>
-      </section>
+        }
+      />
 
-      {/* Paper — outgoing copy. */}
-      <section
-        aria-label="Soạn caption"
-        className="flex-1 bg-paper paper-grain lg:h-screen lg:overflow-y-auto"
-      >
-        <Composer
-          item={selected}
-          caption={caption}
-          draft={draft}
-          cached={fromCache}
-          onCaptionChange={editCaption}
-          settings={prefs.settings}
-          onSettingsChange={setSettings}
-          includeSourceUrl={prefs.includeSourceUrl}
-          onIncludeSourceUrlChange={setIncludeSourceUrl}
-          extraInstructions={extraInstructions}
-          onExtraInstructionsChange={setExtraInstructions}
-          onGenerate={generate}
-          generating={generating}
-          error={generateError}
-          model={model}
+      <SourcePicker
+        sources={sources}
+        enabled={prefs.sources}
+        onToggle={toggleSource}
+      />
+
+      {feedError ? (
+        <Banner
+          status="error"
+          container="section"
+          title="Không tải được bảng tin"
+          description={feedError}
         />
-      </section>
-    </main>
+      ) : null}
+
+      {feedErrors.length > 0 ? (
+        <Banner
+          status="warning"
+          container="section"
+          title="Một số nguồn đang gián đoạn"
+          description={feedErrors.map((item) => item.sourceName).join(", ")}
+        />
+      ) : null}
+
+      <StackItem size="fill" isScrollable>
+        <FeedBoard
+          items={items}
+          selectedId={selected?.id ?? null}
+          onSelect={selectItem}
+          loading={loading}
+        />
+      </StackItem>
+    </VStack>
+  );
+
+  const composer = (
+    <Composer
+      item={selected}
+      caption={caption}
+      draft={draft}
+      cached={fromCache}
+      onCaptionChange={editCaption}
+      settings={prefs.settings}
+      onSettingsChange={setSettings}
+      includeSourceUrl={prefs.includeSourceUrl}
+      onIncludeSourceUrlChange={setIncludeSourceUrl}
+      extraInstructions={extraInstructions}
+      onExtraInstructionsChange={setExtraInstructions}
+      onGenerate={generate}
+      generating={generating}
+      error={generateError}
+      model={model}
+    />
+  );
+
+  return (
+    <Theme theme={sumWorkspaceTheme} mode="light">
+      <AppShell
+        height={isDesktop ? "fill" : "auto"}
+        variant="section"
+        contentPadding={0}
+        topNav={
+          <TopNav
+            label="Điều hướng SUM Editorial"
+            heading={
+              <TopNavHeading
+                logo={<Badge label="SUM" variant="yellow" />}
+                superheading="Saigon United Motorsports"
+                heading="Editorial"
+                headingHref="/"
+              />
+            }
+            endContent={
+              <HStack gap={1.5} vAlign="center">
+                <StatusDot
+                  variant={feedError ? "error" : loading ? "warning" : "success"}
+                  label={
+                    feedError
+                      ? "Nguồn tin gặp lỗi"
+                      : loading
+                        ? "Đang đồng bộ nguồn"
+                        : "Nguồn tin trực tuyến"
+                  }
+                />
+                <Text type="supporting" color="secondary">
+                  {prefs.sources.length} nguồn
+                </Text>
+              </HStack>
+            }
+          />
+        }
+      >
+        {isDesktop ? (
+          <Layout
+            height="fill"
+            start={
+              <LayoutPanel
+                width={400}
+                padding={0}
+                hasDivider
+                label="Hàng đợi tin mới"
+              >
+                {feedContent}
+              </LayoutPanel>
+            }
+          >
+            <LayoutContent padding={0} label="Không gian soạn caption">
+              {composer}
+            </LayoutContent>
+          </Layout>
+        ) : selected ? (
+          <VStack gap={0}>
+            <Section variant="muted" padding={2} dividers={["bottom"]}>
+              <Button
+                label="Quay lại hàng đợi"
+                variant="ghost"
+                icon={<ArrowLeft size={16} aria-hidden />}
+                onClick={() => setSelected(null)}
+              />
+            </Section>
+            {composer}
+          </VStack>
+        ) : (
+          <VStack minHeight={640}>{feedContent}</VStack>
+        )}
+      </AppShell>
+    </Theme>
   );
 }
