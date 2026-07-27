@@ -68,7 +68,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
   return (
     <Button
-      label={copied ? "Đã sao chép" : label}
+      label={copied ? "Copied" : label}
       variant={copied ? "secondary" : "primary"}
       icon={copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       isDisabled={!value}
@@ -107,8 +107,8 @@ export default function Composer({
       <VStack height="100%" minHeight={480} hAlign="center" vAlign="center" padding={6}>
         <EmptyState
           headingLevel={2}
-          title="Chọn một tin để bắt đầu"
-          description="Mở một mục trong hàng đợi. AI chỉ chạy khi bạn chủ động bấm Soạn caption."
+          title="Chọn một story để bắt đầu"
+          description="Mở một story trong News Feed. AI chỉ chạy khi bạn chủ động bấm Generate caption."
           icon={<Sparkles size={32} />}
         />
       </VStack>
@@ -142,7 +142,7 @@ export default function Composer({
               <Heading level={2}>{item.title}</Heading>
               <HStack gap={2} wrap="wrap">
                 <Button
-                  label="Mở bài gốc"
+                  label="Open original"
                   variant="secondary"
                   icon={<ExternalLink size={16} aria-hidden />}
                   href={item.link}
@@ -150,7 +150,7 @@ export default function Composer({
                   rel="noopener noreferrer"
                 />
                 {item.imageUrl ? (
-                  <CopyButton value={item.imageUrl} label="Sao chép link ảnh" />
+                  <CopyButton value={item.imageUrl} label="Copy image link" />
                 ) : null}
               </HStack>
             </VStack>
@@ -169,7 +169,9 @@ export default function Composer({
           <HStack gap={2} wrap="wrap">
             <Button
               label={
-                caption ? "Soạn lại caption (tốn token)" : "Soạn caption tiếng Việt"
+                caption
+                  ? "Regenerate caption (tốn token)"
+                  : "Generate Vietnamese caption"
               }
               variant="primary"
               icon={<Sparkles size={16} aria-hidden />}
@@ -178,14 +180,14 @@ export default function Composer({
               onClick={onGenerate}
             />
             <Button
-              label={showSettings ? "Ẩn tuỳ chỉnh" : "Tuỳ chỉnh bài viết"}
+              label={showSettings ? "Hide settings" : "Post settings"}
               variant="secondary"
               icon={<Settings2 size={16} aria-hidden />}
               onClick={() => setShowSettings((value) => !value)}
             />
           </HStack>
           <HStack gap={1.5} wrap="wrap">
-            {cached ? <Token label="Đã lưu trong phiên" size="sm" color="green" /> : null}
+            {cached ? <Token label="Session draft" size="sm" color="green" /> : null}
             {model ? <Token label={model} size="sm" color="gray" /> : null}
           </HStack>
         </HStack>
@@ -193,26 +195,26 @@ export default function Composer({
         {showSettings ? (
           <Section variant="muted" padding={4}>
             <VStack gap={4}>
-              <Heading level={3}>Tuỳ chỉnh đầu ra</Heading>
+              <Heading level={3}>Output settings</Heading>
               <TextInput
-                label="Credit soạn bài"
+                label="Writer credit"
                 value={settings.author}
                 placeholder="Tên admin, ví dụ Sennar"
                 onChange={(author) => onSettingsChange({ ...settings, author })}
               />
               <TextInput
-                label="Hashtag cố định"
+                label="Core hashtags"
                 value={settings.coreHashtags}
-                description="AI sẽ thêm 3–6 hashtag theo chủ đề sau các tag này."
+                description="AI sẽ thêm 3–6 topic hashtags sau các tag này."
                 onChange={(coreHashtags) =>
                   onSettingsChange({ ...settings, coreHashtags })
                 }
               />
               <VStack gap={1.5}>
-                <Text type="label">Đường phân cách</Text>
+                <Text type="label">Divider style</Text>
                 <HStack gap={2} wrap="wrap">
                   <Button
-                    label="Dấu gạch dài"
+                    label="Em dash"
                     variant={
                       settings.divider === "em-dash" ? "primary" : "secondary"
                     }
@@ -223,7 +225,7 @@ export default function Composer({
                     ————————
                   </Button>
                   <Button
-                    label="Dấu gạch dưới"
+                    label="Underscore"
                     variant={
                       settings.divider === "underscore" ? "primary" : "secondary"
                     }
@@ -236,7 +238,7 @@ export default function Composer({
                 </HStack>
               </VStack>
               <TextArea
-                label="Dặn thêm cho AI"
+                label="Extra notes for AI"
                 isOptional
                 value={extraInstructions}
                 rows={3}
@@ -244,8 +246,8 @@ export default function Composer({
                 onChange={onExtraInstructionsChange}
               />
               <CheckboxInput
-                label="Kèm link trong dòng Nguồn:"
-                description="Tên nguồn luôn được ghi. Link có thể thay đổi cách Facebook tạo ảnh xem trước."
+                label="Include link trong dòng Nguồn:"
+                description="Source name luôn được ghi. Link có thể thay đổi Facebook link preview."
                 value={includeSourceUrl}
                 onChange={onIncludeSourceUrlChange}
               />
@@ -256,7 +258,7 @@ export default function Composer({
         {error ? (
           <Banner
             status="error"
-            title="Không thể soạn caption"
+            title="Không thể generate caption"
             description={error}
           />
         ) : null}
@@ -266,9 +268,9 @@ export default function Composer({
             <VStack gap={3}>
               <HStack gap={2} wrap="wrap" hAlign="between" vAlign="center">
                 <VStack gap={0.5}>
-                  <Heading level={3}>Bản nháp Facebook</Heading>
+                  <Heading level={3}>Facebook draft</Heading>
                   <Text type="supporting" color="secondary">
-                    Có thể sửa trực tiếp trước khi đăng.
+                    Edit trực tiếp trước khi publish.
                   </Text>
                 </VStack>
                 <Text
@@ -277,9 +279,9 @@ export default function Composer({
                   hasTabularNumbers
                 >
                   {stats.bodyWords !== null
-                    ? `Thân bài ${stats.bodyWords} từ · `
+                    ? `Body ${stats.bodyWords} từ · `
                     : ""}
-                  {stats.characters} ký tự
+                  {stats.characters} characters
                 </Text>
               </HStack>
               <TextArea
@@ -292,7 +294,7 @@ export default function Composer({
                   overLimit
                     ? {
                         type: "error",
-                        message: "Thân bài vượt giới hạn tối đa 200 từ.",
+                        message: "Body vượt giới hạn tối đa 200 từ.",
                       }
                     : offTarget
                       ? {
@@ -304,10 +306,10 @@ export default function Composer({
                 onChange={onCaptionChange}
               />
               <HStack gap={2} wrap="wrap">
-                <CopyButton value={caption} label="Sao chép caption" />
+                <CopyButton value={caption} label="Copy caption" />
                 {item.imageUrl ? (
                   <Button
-                    label="Mở ảnh để tải"
+                    label="Open image to download"
                     variant="secondary"
                     icon={<Download size={16} aria-hidden />}
                     href={item.imageUrl}

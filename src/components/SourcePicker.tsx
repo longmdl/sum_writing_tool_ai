@@ -27,7 +27,7 @@ export default function SourcePicker({
     <Section variant="muted" padding={3} dividers={["bottom"]}>
       <HStack gap={1.5} wrap="wrap" vAlign="center">
         <Text type="label" color="secondary">
-          Nguồn theo dõi
+          Sources
         </Text>
         {sources.map((source) => {
           const isEnabled = enabled.includes(source.id);
@@ -40,7 +40,7 @@ export default function SourcePicker({
               size="sm"
               color={isEnabled ? "green" : "gray"}
               icon={restricted ? <AlertTriangle size={14} aria-hidden /> : undefined}
-              description={`${isEnabled ? "Đang bật" : "Đang tắt"}. ${source.policy.note}`}
+              description={`${isEnabled ? "Enabled" : "Disabled"}. ${source.policy.note}`}
               onClick={() => onToggle(source.id)}
             />
           );
@@ -50,8 +50,8 @@ export default function SourcePicker({
       {hasRestrictedSource ? (
         <Banner
           status="warning"
-          title="Có nguồn giới hạn sử dụng AI"
-          description="Công cụ chỉ dùng phần trích RSS để tham khảo và luôn giữ dòng Nguồn: trong bài đăng."
+          title="Một số sources giới hạn AI usage"
+          description="Tool chỉ dùng RSS excerpt để tham khảo và luôn giữ dòng Nguồn: trong bài đăng."
         />
       ) : null}
     </Section>

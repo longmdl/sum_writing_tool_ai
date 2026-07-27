@@ -73,7 +73,7 @@ async function fetchFeed(
     { cache: "no-store" },
   );
   const data = (await response.json()) as FeedResponse;
-  if (!response.ok) throw new Error(data.error ?? "Không tải được tin.");
+  if (!response.ok) throw new Error(data.error ?? "Không load được News Feed.");
   return data;
 }
 
@@ -125,7 +125,9 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         setFeedError(null);
       } catch (error) {
         if (cancelled) return;
-        setFeedError(error instanceof Error ? error.message : "Không tải được tin.");
+        setFeedError(
+          error instanceof Error ? error.message : "Không load được News Feed.",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -211,7 +213,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         error?: string;
       };
       if (!response.ok || !data.caption) {
-        throw new Error(data.error ?? "Soạn caption thất bại.");
+        throw new Error(data.error ?? "Generate caption thất bại.");
       }
       const post: GeneratedPost = {
         caption: data.caption,
@@ -225,7 +227,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       setGenerated((current) => ({ ...current, [selected.id]: post }));
     } catch (error) {
       setGenerateError(
-        error instanceof Error ? error.message : "Soạn caption thất bại.",
+        error instanceof Error ? error.message : "Generate caption thất bại.",
       );
     } finally {
       setGenerating(false);
@@ -257,21 +259,21 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const feedContent = (
     <VStack height="100%" gap={0}>
       <Toolbar
-        label="Công cụ hàng đợi tin"
+        label="News Feed controls"
         size="md"
         variant="section"
         startContent={
           <VStack gap={0}>
-            <Heading level={1}>Hàng đợi tin</Heading>
+            <Heading level={1}>News Feed</Heading>
             <Text type="supporting" color="secondary">
-              25 tin motorsport mới nhất
-              {updatedLabel ? ` · cập nhật ${updatedLabel}` : ""}
+              25 latest motorsport stories
+              {updatedLabel ? ` · updated ${updatedLabel}` : ""}
             </Text>
           </VStack>
         }
         endContent={
           <Button
-            label="Làm mới"
+            label="Refresh"
             variant="ghost"
             icon={<RefreshCw size={16} aria-hidden />}
             isIconOnly={!isDesktop}
@@ -292,7 +294,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         <Banner
           status="error"
           container="section"
-          title="Không tải được bảng tin"
+          title="Không load được News Feed"
           description={feedError}
         />
       ) : null}
@@ -301,7 +303,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         <Banner
           status="warning"
           container="section"
-          title="Một số nguồn đang gián đoạn"
+          title="Một số sources đang gián đoạn"
           description={feedErrors.map((item) => item.sourceName).join(", ")}
         />
       ) : null}
@@ -345,7 +347,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         contentPadding={0}
         topNav={
           <TopNav
-            label="Điều hướng SUM Editorial"
+            label="SUM Editorial navigation"
             heading={
               <TopNavHeading
                 logo={<Badge label="SUM" variant="yellow" />}
@@ -359,8 +361,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
                 <Button
                   label={
                     prefs.themeMode === "dark"
-                      ? "Bật chế độ sáng"
-                      : "Bật chế độ tối"
+                      ? "Switch to light mode"
+                      : "Switch to dark mode"
                   }
                   variant="ghost"
                   icon={
@@ -377,14 +379,14 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
                   variant={feedError ? "error" : loading ? "warning" : "success"}
                   label={
                     feedError
-                      ? "Nguồn tin gặp lỗi"
+                      ? "Source error"
                       : loading
-                        ? "Đang đồng bộ nguồn"
-                        : "Nguồn tin trực tuyến"
+                        ? "Đang sync sources"
+                        : "Sources online"
                   }
                 />
                 <Text type="supporting" color="secondary">
-                  {prefs.sources.length} nguồn
+                  {prefs.sources.length} sources
                 </Text>
               </HStack>
             }
@@ -399,13 +401,13 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
                 width={400}
                 padding={0}
                 hasDivider
-                label="Hàng đợi tin mới"
+                label="Latest News Feed"
               >
                 {feedContent}
               </LayoutPanel>
             }
           >
-            <LayoutContent padding={0} label="Không gian soạn caption">
+            <LayoutContent padding={0} label="Caption workspace">
               {composer}
             </LayoutContent>
           </Layout>
@@ -413,7 +415,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           <VStack gap={0}>
             <Section variant="muted" padding={2} dividers={["bottom"]}>
               <Button
-                label="Quay lại hàng đợi"
+                label="Back to News Feed"
                 variant="ghost"
                 icon={<ArrowLeft size={16} aria-hidden />}
                 onClick={() => setSelected(null)}

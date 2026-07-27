@@ -46,7 +46,12 @@ export default function FeedBoard({
 }: FeedBoardProps) {
   if (loading && items.length === 0) {
     return (
-      <List density="balanced" hasDividers aria-busy="true" aria-label="Đang tải tin">
+      <List
+        density="balanced"
+        hasDividers
+        aria-busy="true"
+        aria-label="Đang load News Feed"
+      >
         {Array.from({ length: 8 }, (_, i) => (
           <SkeletonRow key={i} index={i} />
         ))}
@@ -58,14 +63,14 @@ export default function FeedBoard({
     return (
       <EmptyState
         isCompact
-        title="Chưa có tin trong hàng đợi"
-        description="Bật ít nhất một nguồn ở phía trên hoặc thử làm mới bảng tin."
+        title="News Feed đang trống"
+        description="Bật ít nhất một source ở phía trên hoặc thử Refresh."
       />
     );
   }
 
   return (
-    <List density="balanced" hasDividers aria-label="Tin motorsport mới nhất">
+    <List density="balanced" hasDividers aria-label="Latest motorsport stories">
       {items.map((item, index) => {
         const fresh = freshness(item.publishedAt);
 
