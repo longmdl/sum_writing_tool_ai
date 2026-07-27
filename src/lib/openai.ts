@@ -72,38 +72,27 @@ function parseDraft(raw: string): DraftContent {
   }
 
   const obj = parsed as Record<string, unknown>;
-  const headline = typeof obj.headline === "string" ? obj.headline.trim() : "";
-  const lead = typeof obj.lead === "string" ? obj.lead.trim() : "";
+  const headerTag = typeof obj.headerTag === "string" ? obj.headerTag.trim() : "";
   const body = asStringArray(obj.body);
-  const closingQuestion =
-    typeof obj.closingQuestion === "string" ? obj.closingQuestion.trim() : "";
 
-  const missing = [
-    !headline && "headline",
-    !lead && "lead",
-    body.length === 0 && "body",
-    !closingQuestion && "closingQuestion",
-  ].filter(Boolean);
-
+  const missing = [!headerTag && "headerTag", body.length === 0 && "body"].filter(
+    Boolean,
+  );
   if (missing.length > 0) {
     throw new Error(`The model's response was missing: ${missing.join(", ")}.`);
   }
 
-  let list: DraftContent["list"];
-  if (obj.list && typeof obj.list === "object") {
-    const rawList = obj.list as Record<string, unknown>;
-    const items = asStringArray(rawList.items);
-    const label = typeof rawList.label === "string" ? rawList.label.trim() : "";
-    if (items.length > 0 && label) list = { label, items };
-  }
+  const list = asStringArray(obj.list);
+  const hook = typeof obj.hook === "string" ? obj.hook.trim() : "";
 
   return {
-    // The guide requires caps; enforce it here so one stray output cannot slip through.
-    headline: headline.toLocaleUpperCase("vi-VN"),
-    lead,
+    // The guide requires caps; enforce it so one stray output cannot slip
+    // through. 🚨 BREAKING keeps its emoji — toLocaleUpperCase leaves it alone.
+    headerTag: headerTag.toLocaleUpperCase("vi-VN"),
     body,
-    list,
-    closingQuestion,
+    list: list.length > 0 ? list : undefined,
+    hook: hook || undefined,
+    topicHashtags: asStringArray(obj.topicHashtags),
   };
 }
 

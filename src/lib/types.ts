@@ -42,21 +42,36 @@ export interface NewsItem {
   categories: string[];
 }
 
+/** Topic tags that open a post. Free-form so the guide can add more. */
+export const HEADER_TAGS = [
+  "F1 NEWS",
+  "F1 RACE RECAP",
+  "SIM RACING NEWS",
+  "WEC NEWS",
+  "IMSA NEWS",
+  "MOTOGP NEWS",
+  "VĂN HÓA XE",
+  "🚨 BREAKING",
+] as const;
+
 /** The only fields the model is allowed to write. */
 export interface DraftContent {
-  headline: string;
-  lead: string;
+  headerTag: string;
   body: string[];
-  list?: { label: string; items: string[] };
-  closingQuestion: string;
+  list?: string[];
+  hook?: string;
+  topicHashtags: string[];
 }
 
 /** Footer values the app assembles deterministically. */
 export interface PostSettings {
   author: string;
-  hashtags: string;
+  /** The four core tags, always prepended to the model's topic tags. */
+  coreHashtags: string;
   discordLine: string;
   ctaLine: string;
+  /** Both are in the house style; pick one and stay consistent. */
+  divider: "em-dash" | "underscore";
 }
 
 export interface GenerateResponse {

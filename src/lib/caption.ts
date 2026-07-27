@@ -1,22 +1,34 @@
 import type { DraftContent, NewsItem, PostSettings } from "./types";
 
-/** Matches the house format: 13 underscores above, 10 below. */
-const TOP_RULE = "_____________";
-const BOTTOM_RULE = "__________";
+/** Both dividers are house style; the admin picks one and keeps it consistent. */
+const DIVIDERS: Record<PostSettings["divider"], string> = {
+  "em-dash": "————————",
+  underscore: "__________",
+};
+
+/** List items sit indented under the colon line that introduces them. */
+const LIST_INDENT = "  ";
 
 export const DEFAULT_SETTINGS: PostSettings = {
-  author: "",
-  hashtags: "#SUM #clubhouse #Thethaotocdo #Vanhoaxe",
+  author: "Sennar",
+  coreHashtags: "#SUM #clubhouse #Thethaotocdo #Vanhoaxe",
   discordLine: "I✒️ Hãy chung tay đóng góp và chia sẻ content qua Discord của SUM",
   ctaLine: "Tham gia CLB ngay hôm nay",
+  divider: "em-dash",
 };
 
 export interface CaptionOptions {
   includeSourceUrl?: boolean;
 }
 
+function normaliseTag(tag: string): string {
+  const trimmed = tag.trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+}
+
 /**
- * Assembles the final caption from the model's four fields plus the fixed
+ * Assembles the final post from the five fields the model writes plus the fixed
  * footer. The footer is built here rather than generated so it is identical on
  * every post — and so the `Nguồn:` credit cannot be dropped.
  */
@@ -28,25 +40,23 @@ export function buildCaption(
 ): string {
   const lines: string[] = [];
 
-  lines.push(draft.headline.trim());
-  lines.push(TOP_RULE);
-  lines.push(draft.lead.trim());
+  lines.push(draft.headerTag.trim());
 
   for (const paragraph of draft.body) {
     const text = paragraph.trim();
     if (text) lines.push(text);
   }
 
-  if (draft.list && draft.list.items.length > 0) {
-    lines.push(draft.list.label.trim());
-    for (const entry of draft.list.items) {
+  if (draft.list && draft.list.length > 0) {
+    for (const entry of draft.list) {
       const text = entry.trim();
-      if (text) lines.push(text);
+      if (text) lines.push(`${LIST_INDENT}${text}`);
     }
   }
 
-  lines.push(draft.closingQuestion.trim());
-  lines.push(BOTTOM_RULE);
+  if (draft.hook?.trim()) lines.push(draft.hook.trim());
+
+  lines.push(DIVIDERS[settings.divider] ?? DIVIDERS["em-dash"]);
 
   // Attribution is not optional. The source name is always present; the URL is
   // an admin preference because it changes Facebook's link preview behaviour.
@@ -60,15 +70,40 @@ export function buildCaption(
     lines.push(`I❤️ Credit soạn bài: ${settings.author.trim()}`);
   }
   if (settings.discordLine.trim()) lines.push(settings.discordLine.trim());
-  if (settings.hashtags.trim()) lines.push(`${settings.hashtags.trim()} `);
+
+  // Core tags always lead, then the model's topic tags, deduped.
+  const core = settings.coreHashtags.trim().split(/\s+/).filter(Boolean);
+  const topic = draft.topicHashtags.map(normaliseTag).filter(Boolean);
+  const seen = new Set(core.map((t) => t.toLowerCase()));
+  const merged = [...core];
+  for (const tag of topic) {
+    if (!seen.has(tag.toLowerCase())) {
+      seen.add(tag.toLowerCase());
+      merged.push(tag);
+    }
+  }
+  if (merged.length > 0) lines.push(merged.join(" "));
+
   if (settings.ctaLine.trim()) lines.push(settings.ctaLine.trim());
 
   return lines.join("\n");
 }
 
-/** Facebook truncates around 400–500 characters; useful signal for the admin. */
-export function captionStats(caption: string) {
+/**
+ * The guide caps the body at 200 Vietnamese words, so the admin needs to see the
+ * body count — not the whole post, which the footer would inflate.
+ */
+export function captionStats(caption: string, draft?: DraftContent | null) {
   const characters = caption.length;
   const words = caption.trim().split(/\s+/).filter(Boolean).length;
-  return { characters, words };
+
+  let bodyWords: number | null = null;
+  if (draft) {
+    const bodyText = [...draft.body, draft.hook ?? "", ...(draft.list ?? [])]
+      .join(" ")
+      .trim();
+    bodyWords = bodyText ? bodyText.split(/\s+/).filter(Boolean).length : 0;
+  }
+
+  return { characters, words, bodyWords };
 }

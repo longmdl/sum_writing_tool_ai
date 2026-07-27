@@ -11,7 +11,19 @@ import {
   updatePreferences,
   type Preferences,
 } from "@/lib/preferences";
-import type { NewsItem, PostSettings, Source, SourceId } from "@/lib/types";
+import type {
+  DraftContent,
+  NewsItem,
+  PostSettings,
+  Source,
+  SourceId,
+} from "@/lib/types";
+
+interface GeneratedPost {
+  caption: string;
+  draft: DraftContent | null;
+  model: string | null;
+}
 
 interface WorkbenchProps {
   sources: Source[];
@@ -55,10 +67,19 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
 
   const [selected, setSelected] = useState<NewsItem | null>(null);
   const [caption, setCaption] = useState("");
+  const [draft, setDraft] = useState<DraftContent | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [extraInstructions, setExtraInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
+
+  /**
+   * Generated captions, keyed by story id, kept for the session. Switching
+   * stories and coming back must not cost a second model call — only the
+   * explicit "Soạn lại" button re-spends.
+   */
+  const [generated, setGenerated] = useState<Record<string, GeneratedPost>>({});
 
   // Joined rather than passed as an array so the effect compares by value.
   const sourcesKey = prefs.sources.join(",");
@@ -116,12 +137,20 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     [prefs, savePrefs],
   );
 
-  const selectItem = useCallback((item: NewsItem) => {
-    setSelected(item);
-    setCaption("");
-    setModel(null);
-    setGenerateError(null);
-  }, []);
+  const selectItem = useCallback(
+    (item: NewsItem) => {
+      setSelected(item);
+      setGenerateError(null);
+
+      // Restore a caption already paid for this session rather than clearing it.
+      const previous = generated[item.id];
+      setCaption(previous?.caption ?? "");
+      setDraft(previous?.draft ?? null);
+      setModel(previous?.model ?? null);
+      setFromCache(Boolean(previous));
+    },
+    [generated],
+  );
 
   const generate = useCallback(async () => {
     if (!selected) return;
@@ -141,14 +170,23 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       });
       const data = (await response.json()) as {
         caption?: string;
+        draft?: DraftContent;
         model?: string;
         error?: string;
       };
       if (!response.ok || !data.caption) {
         throw new Error(data.error ?? "Soạn caption thất bại.");
       }
-      setCaption(data.caption);
-      setModel(data.model ?? null);
+      const post: GeneratedPost = {
+        caption: data.caption,
+        draft: data.draft ?? null,
+        model: data.model ?? null,
+      };
+      setCaption(post.caption);
+      setDraft(post.draft);
+      setModel(post.model);
+      setFromCache(false);
+      setGenerated((current) => ({ ...current, [selected.id]: post }));
     } catch (error) {
       setGenerateError(
         error instanceof Error ? error.message : "Soạn caption thất bại.",
@@ -157,6 +195,20 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       setGenerating(false);
     }
   }, [selected, prefs, extraInstructions]);
+
+  /** Keep admin edits with the story, so switching away does not lose them. */
+  const editCaption = useCallback(
+    (value: string) => {
+      setCaption(value);
+      if (!selected) return;
+      setGenerated((current) => {
+        const existing = current[selected.id];
+        if (!existing) return current;
+        return { ...current, [selected.id]: { ...existing, caption: value } };
+      });
+    },
+    [selected],
+  );
 
   const updatedLabel = useMemo(() => {
     if (!fetchedAt) return null;
@@ -229,7 +281,9 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         <Composer
           item={selected}
           caption={caption}
-          onCaptionChange={setCaption}
+          draft={draft}
+          cached={fromCache}
+          onCaptionChange={editCaption}
           settings={prefs.settings}
           onSettingsChange={setSettings}
           includeSourceUrl={prefs.includeSourceUrl}

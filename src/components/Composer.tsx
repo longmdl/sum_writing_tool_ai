@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { captionStats } from "@/lib/caption";
-import type { NewsItem, PostSettings } from "@/lib/types";
+import type { DraftContent, NewsItem, PostSettings } from "@/lib/types";
 
 interface ComposerProps {
   item: NewsItem | null;
   caption: string;
+  draft: DraftContent | null;
   onCaptionChange: (value: string) => void;
   settings: PostSettings;
   onSettingsChange: (next: PostSettings) => void;
@@ -18,6 +19,7 @@ interface ComposerProps {
   generating: boolean;
   error: string | null;
   model: string | null;
+  cached: boolean;
 }
 
 function CopyButton({
@@ -89,6 +91,7 @@ function Field({
 export default function Composer({
   item,
   caption,
+  draft,
   onCaptionChange,
   settings,
   onSettingsChange,
@@ -100,9 +103,15 @@ export default function Composer({
   generating,
   error,
   model,
+  cached,
 }: ComposerProps) {
   const [showSettings, setShowSettings] = useState(false);
-  const stats = captionStats(caption);
+  const stats = captionStats(caption, draft);
+
+  // The guide caps the body at 200 words and targets 60–150.
+  const overLimit = stats.bodyWords !== null && stats.bodyWords > 200;
+  const offTarget =
+    stats.bodyWords !== null && !overLimit && (stats.bodyWords < 60 || stats.bodyWords > 150);
 
   if (!item) {
     return (
@@ -114,6 +123,9 @@ export default function Composer({
           <p className="mt-2 text-sm text-ink-soft leading-relaxed">
             Bảng bên trái xếp 10 tin mới nhất theo thời gian đăng. Màu tím là mới
             nhất, rồi xanh lá, vàng, xám.
+          </p>
+          <p className="mt-3 text-[12px] text-ink-soft/80 leading-relaxed">
+            Chọn tin không tốn token. AI chỉ chạy khi bạn bấm nút soạn.
           </p>
         </div>
       </div>
@@ -167,7 +179,7 @@ export default function Composer({
         {item.excerpt}
       </p>
 
-      {/* Generate */}
+      {/* Generate — the only thing here that spends tokens. */}
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -178,7 +190,7 @@ export default function Composer({
           {generating
             ? "Đang soạn…"
             : caption
-              ? "Soạn lại"
+              ? "Soạn lại (tốn token)"
               : "Soạn caption tiếng Việt"}
         </button>
 
@@ -191,11 +203,21 @@ export default function Composer({
           {showSettings ? "Ẩn tuỳ chỉnh" : "Tuỳ chỉnh"}
         </button>
 
-        {model ? (
-          <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft/70 ml-auto">
-            {model}
-          </span>
-        ) : null}
+        <span className="ml-auto flex items-center gap-2">
+          {cached ? (
+            <span
+              className="font-mono text-[10px] uppercase tracking-wider text-ink-soft/70"
+              title="Lấy lại từ phiên này — không gọi lại AI"
+            >
+              đã lưu
+            </span>
+          ) : null}
+          {model ? (
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft/70">
+              {model}
+            </span>
+          ) : null}
+        </span>
       </div>
 
       {showSettings ? (
@@ -203,14 +225,46 @@ export default function Composer({
           <Field
             label="Credit soạn bài"
             value={settings.author}
-            placeholder="Tên admin, ví dụ Omega Zero"
+            placeholder="Tên admin, ví dụ Sennar"
             onChange={(author) => onSettingsChange({ ...settings, author })}
           />
           <Field
-            label="Hashtags"
-            value={settings.hashtags}
-            onChange={(hashtags) => onSettingsChange({ ...settings, hashtags })}
+            label="Hashtag cố định"
+            value={settings.coreHashtags}
+            onChange={(coreHashtags) => onSettingsChange({ ...settings, coreHashtags })}
           />
+          <p className="text-[11px] text-ink-soft leading-relaxed -mt-1.5">
+            AI tự thêm 3–6 hashtag theo chủ đề sau các tag cố định này.
+          </p>
+
+          <fieldset>
+            <legend className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft mb-1.5">
+              Đường phân cách
+            </legend>
+            <div className="flex gap-2">
+              {(
+                [
+                  ["em-dash", "————————"],
+                  ["underscore", "__________"],
+                ] as const
+              ).map(([value, preview]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.divider === value}
+                  onClick={() => onSettingsChange({ ...settings, divider: value })}
+                  className={`font-mono text-[11px] px-3 py-2 rounded-sm border transition-colors ${
+                    settings.divider === value
+                      ? "border-ink/40 bg-ink/10 text-ink"
+                      : "border-ink/15 text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  {preview}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
           <label className="block">
             <span className="block font-mono text-[10px] uppercase tracking-wider text-ink-soft mb-1">
@@ -255,19 +309,29 @@ export default function Composer({
       {/* The caption itself — editable, because admins always tweak. */}
       {caption ? (
         <div className="mt-5">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between gap-3 mb-2">
             <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft">
               Caption · sửa thoải mái trước khi đăng
             </span>
-            <span className="font-mono text-[10px] tabular-nums text-ink-soft/70">
-              {stats.words} từ · {stats.characters} ký tự
+            <span
+              className={`font-mono text-[10px] tabular-nums ${
+                overLimit
+                  ? "text-flag"
+                  : offTarget
+                    ? "text-ink-soft"
+                    : "text-ink-soft/70"
+              }`}
+              title="Đếm từ phần thân bài — mục tiêu 60–150 từ, tối đa 200"
+            >
+              {stats.bodyWords !== null ? `thân bài ${stats.bodyWords} từ · ` : ""}
+              {stats.characters} ký tự
             </span>
           </div>
 
           <textarea
             value={caption}
             onChange={(event) => onCaptionChange(event.target.value)}
-            rows={22}
+            rows={20}
             spellCheck={false}
             className="w-full bg-paper-hi border border-ink/15 rounded-sm px-4 py-3.5 text-[14.5px] leading-[1.65] text-ink resize-y font-body"
           />

@@ -13,18 +13,39 @@ line or two, copies the caption, grabs the image, and posts.
 
 ```
 RSS feeds  ─►  scraper  ─►  10 newest, merged + deduped  ─►  admin picks one
+   (free)                        (free)                          (free)
+                                                                    │
+                                                      admin clicks generate
                                                                     │
                                      content/style-guide.md  ──►  OpenAI
                                                                     │
-                                              model writes 4 fields │
+                                              model writes 5 fields │
                                                                     ▼
-                                         app assembles fixed footer ─►  caption
+                                         app assembles fixed footer ─►  post
 ```
 
-The model only writes **headline, lead, body, closing question** (and an optional
-list). The separators, `Nguồn:` credit, Discord line, hashtags, and CTA are
-assembled in code from your settings, so they are identical on every post and the
-source credit cannot be dropped.
+**Nothing calls the model until you click generate.** Browsing the feed and
+selecting stories costs zero tokens — it is all RSS. Generated posts are cached
+per story for the session, so switching stories and coming back does not re-spend;
+only the explicit **Soạn lại (tốn token)** button pays again.
+
+The model writes only **header tag, body, list, hook, topic hashtags**. The
+divider, `Nguồn:` credit, Discord line, core hashtags, and CTA are assembled in
+code from your settings, so they are identical on every post and the source
+credit cannot be dropped.
+
+Output format:
+
+```
+F1 NEWS
+F1 vừa chính thức xác nhận sẽ trở lại đường đua Sepang…
+————————
+Nguồn: Formula1.com
+I❤️ Credit soạn bài: Sennar
+I✒️ Hãy chung tay đóng góp và chia sẻ content qua Discord của SUM
+#SUM #clubhouse #Thethaotocdo #Vanhoaxe #F1 #bangtinF1 #F1News
+Tham gia CLB ngay hôm nay
+```
 
 ### Sources
 
@@ -70,9 +91,14 @@ a message saying so.
 ## Changing the writing style
 
 Edit **`content/style-guide.md`**. That file *is* the system prompt — it defines
-the voice, the Vietnamese conventions, which proper nouns stay in English, the
-post structure, the length target, and the JSON contract. There is no prompt text
-hidden in the code.
+the header tags, the voice, the Vietnamese conventions, which proper nouns stay
+in English, the body length target (60–150 words, hard cap 200), the hashtag
+sets, and the JSON contract. There is no prompt text hidden in the code.
+
+The same file backs the **`sum-post` Claude Code skill**
+(`.claude/skills/sum-post/`), so you can paste any article into Claude Code and
+get a post in the identical format without opening the web app. The skill reads
+the guide rather than restating it, so the two can never drift.
 
 In dev the file is re-read every second, so edits take effect on the next
 generation. In production it is cached for the life of the instance, so redeploy
