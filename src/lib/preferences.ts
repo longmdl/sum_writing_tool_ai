@@ -10,7 +10,8 @@ export interface Preferences {
   themeMode: "light" | "dark";
 }
 
-const STORAGE_KEY = "sum-editorial/v2";
+const STORAGE_KEY = "sum-editorial/v3";
+const PREVIOUS_STORAGE_KEY = "sum-editorial/v2";
 const LEGACY_STORAGE_KEY = "sum-pit-wall/v1";
 const NEW_DEFAULT_SOURCES: SourceId[] = ["traxion", "racefans"];
 
@@ -47,10 +48,20 @@ function read(fallbackSources: SourceId[]): Preferences {
   const base = defaults(fallbackSources);
   try {
     const current = window.localStorage.getItem(STORAGE_KEY);
-    const legacy = current ? null : window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    const raw = current ?? legacy;
+    const previous = current
+      ? null
+      : window.localStorage.getItem(PREVIOUS_STORAGE_KEY);
+    const legacy =
+      current || previous
+        ? null
+        : window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    const raw = current ?? previous ?? legacy;
     if (!raw) return base;
     const saved = JSON.parse(raw) as Partial<Preferences>;
+    const savedSettings = { ...DEFAULT_SETTINGS, ...(saved.settings ?? {}) };
+    if (!current && savedSettings.author.trim() === "Sennar") {
+      savedSettings.author = "";
+    }
     const savedSources =
       Array.isArray(saved.sources) && saved.sources.length > 0
         ? saved.sources
@@ -60,7 +71,7 @@ function read(fallbackSources: SourceId[]): Preferences {
       : savedSources;
 
     return {
-      settings: { ...DEFAULT_SETTINGS, ...(saved.settings ?? {}) },
+      settings: savedSettings,
       sources,
       includeSourceUrl: saved.includeSourceUrl === true,
       themeMode: saved.themeMode === "dark" ? "dark" : "light",

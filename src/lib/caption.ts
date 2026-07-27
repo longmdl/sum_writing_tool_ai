@@ -10,7 +10,7 @@ const DIVIDERS: Record<PostSettings["divider"], string> = {
 const LIST_INDENT = "  ";
 
 export const DEFAULT_SETTINGS: PostSettings = {
-  author: "Sennar",
+  author: "",
   coreHashtags: "#SUM #clubhouse #Thethaotocdo #Vanhoaxe",
   discordLine: "I✒️ Hãy chung tay đóng góp và chia sẻ content qua Discord của SUM",
   ctaLine: "Tham gia CLB ngay hôm nay",
