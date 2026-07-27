@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { buildCaption, DEFAULT_SETTINGS } from "@/lib/caption";
+import { buildCaption } from "@/lib/caption";
 import { generateDraft } from "@/lib/openai";
 import { scrapeLatest } from "@/lib/scraper";
+import { coercePostSettings } from "@/lib/settings";
 import { DEFAULT_SOURCE_IDS, isSourceId } from "@/lib/sources";
-import type { PostSettings } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,23 +11,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_EXTRA_INSTRUCTIONS = 1_000;
-
-function coerceSettings(raw: unknown): PostSettings {
-  const input = (raw ?? {}) as Partial<Record<keyof PostSettings, unknown>>;
-  const pick = (key: "author" | "coreHashtags" | "discordLine" | "ctaLine") =>
-    typeof input[key] === "string" ? (input[key] as string) : DEFAULT_SETTINGS[key];
-
-  return {
-    author: pick("author").slice(0, 120),
-    coreHashtags: pick("coreHashtags").slice(0, 300),
-    discordLine: pick("discordLine").slice(0, 300),
-    ctaLine: pick("ctaLine").slice(0, 200),
-    divider:
-      input.divider === "underscore" || input.divider === "em-dash"
-        ? input.divider
-        : DEFAULT_SETTINGS.divider,
-  };
-}
 
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
@@ -68,7 +51,7 @@ export async function POST(request: Request) {
       ? payload.extraInstructions.slice(0, MAX_EXTRA_INSTRUCTIONS)
       : undefined;
 
-  const settings = coerceSettings(payload.settings);
+  const settings = coercePostSettings(payload.settings);
   const includeSourceUrl = payload.includeSourceUrl === true;
 
   try {

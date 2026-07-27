@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, Moon, RefreshCw, Sun } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  Moon,
+  Newspaper,
+  RefreshCw,
+  Sun,
+} from "lucide-react";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Banner } from "@astryxdesign/core/Banner";
@@ -16,6 +23,7 @@ import {
 import { Section } from "@astryxdesign/core/Section";
 import { StackItem } from "@astryxdesign/core/Stack";
 import { StatusDot } from "@astryxdesign/core/StatusDot";
+import { Tab, TabList } from "@astryxdesign/core/TabList";
 import { Text } from "@astryxdesign/core/Text";
 import { Theme } from "@astryxdesign/core/theme";
 import { Toolbar } from "@astryxdesign/core/Toolbar";
@@ -24,6 +32,7 @@ import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { VStack } from "@astryxdesign/core/VStack";
 import Composer from "./Composer";
 import FeedBoard from "./FeedBoard";
+import ManualArticleWorkspace from "./ManualArticleWorkspace";
 import SourcePicker from "./SourcePicker";
 import { sumWorkspaceTheme } from "@/theme/sum-theme.ts/sum-workspace";
 import {
@@ -59,6 +68,8 @@ interface FeedResponse {
   error?: string;
 }
 
+type WorkspaceTab = "feed" | "manual";
+
 /** Pure fetch — never touches state, so the effect below stays side-effect free. */
 async function fetchFeed(
   sourceIds: SourceId[],
@@ -91,6 +102,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const [loading, setLoading] = useState(true);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("feed");
 
   const [selected, setSelected] = useState<NewsItem | null>(null);
   const [caption, setCaption] = useState("");
@@ -339,6 +351,72 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     />
   );
 
+  const feedWorkspace = isDesktop ? (
+    <Layout
+      height="fill"
+      start={
+        <LayoutPanel
+          width={400}
+          padding={0}
+          hasDivider
+          label="Latest News Feed"
+        >
+          {feedContent}
+        </LayoutPanel>
+      }
+    >
+      <LayoutContent padding={0} label="Caption workspace">
+        {composer}
+      </LayoutContent>
+    </Layout>
+  ) : selected ? (
+    <VStack gap={0}>
+      <Section variant="muted" padding={2} dividers={["bottom"]}>
+        <Button
+          label="Back to News Feed"
+          variant="ghost"
+          icon={<ArrowLeft size={16} aria-hidden />}
+          onClick={() => setSelected(null)}
+        />
+      </Section>
+      {composer}
+    </VStack>
+  ) : (
+    <VStack minHeight={640}>{feedContent}</VStack>
+  );
+
+  const workspaceContent =
+    workspaceTab === "manual" ? (
+      <ManualArticleWorkspace
+        isDesktop={isDesktop}
+        settings={prefs.settings}
+        includeSourceUrl={prefs.includeSourceUrl}
+        onIncludeSourceUrlChange={setIncludeSourceUrl}
+      />
+    ) : (
+      feedWorkspace
+    );
+
+  const workspaceTabs = (
+    <TabList
+      value={workspaceTab}
+      onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
+      layout={isDesktop ? "hug" : "fill"}
+      hasDivider
+    >
+      <Tab
+        value="feed"
+        label="News Feed"
+        icon={<Newspaper size={16} aria-hidden />}
+      />
+      <Tab
+        value="manual"
+        label="Manual Article"
+        icon={<FileText size={16} aria-hidden />}
+      />
+    </TabList>
+  );
+
   return (
     <Theme theme={sumWorkspaceTheme} mode={prefs.themeMode}>
       <AppShell
@@ -394,37 +472,15 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         }
       >
         {isDesktop ? (
-          <Layout
-            height="fill"
-            start={
-              <LayoutPanel
-                width={400}
-                padding={0}
-                hasDivider
-                label="Latest News Feed"
-              >
-                {feedContent}
-              </LayoutPanel>
-            }
-          >
-            <LayoutContent padding={0} label="Caption workspace">
-              {composer}
-            </LayoutContent>
-          </Layout>
-        ) : selected ? (
-          <VStack gap={0}>
-            <Section variant="muted" padding={2} dividers={["bottom"]}>
-              <Button
-                label="Back to News Feed"
-                variant="ghost"
-                icon={<ArrowLeft size={16} aria-hidden />}
-                onClick={() => setSelected(null)}
-              />
-            </Section>
-            {composer}
+          <VStack height="100%" gap={0}>
+            {workspaceTabs}
+            <StackItem size="fill">{workspaceContent}</StackItem>
           </VStack>
         ) : (
-          <VStack minHeight={640}>{feedContent}</VStack>
+          <VStack minHeight={640} gap={0}>
+            {workspaceTabs}
+            {workspaceContent}
+          </VStack>
         )}
       </AppShell>
     </Theme>

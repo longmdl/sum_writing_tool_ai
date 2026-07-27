@@ -34,7 +34,7 @@ function normaliseTag(tag: string): string {
  */
 export function buildCaption(
   draft: DraftContent,
-  item: NewsItem,
+  item: Pick<NewsItem, "sourceName" | "link">,
   settings: PostSettings,
   options: CaptionOptions = {},
 ): string {
@@ -61,7 +61,7 @@ export function buildCaption(
   // Attribution is not optional. The source name is always present; the URL is
   // an admin preference because it changes Facebook's link preview behaviour.
   lines.push(
-    options.includeSourceUrl
+    options.includeSourceUrl && item.link
       ? `Nguồn: ${item.sourceName} — ${item.link}`
       : `Nguồn: ${item.sourceName}`,
   );
