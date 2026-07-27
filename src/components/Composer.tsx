@@ -104,7 +104,7 @@ export default function Composer({
 
   if (!item) {
     return (
-      <VStack height="100%" minHeight={480} hAlign="center" vAlign="center" padding={6}>
+      <VStack height="100%" minHeight={480} hAlign="center" vAlign="center" padding={8}>
         <EmptyState
           headingLevel={2}
           title="Chọn một story để bắt đầu"
@@ -116,10 +116,10 @@ export default function Composer({
   }
 
   return (
-    <VStack hAlign="center" padding={5}>
-      <VStack width="100%" maxWidth={820} gap={4}>
-        <Section variant="muted" padding={4}>
-          <HStack gap={4} vAlign="start">
+    <VStack hAlign="center" padding={6}>
+      <VStack width="100%" maxWidth={860} gap={5}>
+        <Section variant="muted" padding={5}>
+          <HStack gap={5} vAlign="start">
             <Thumbnail
               src={item.imageUrl ?? undefined}
               alt={item.imageUrl ? `Ảnh minh hoạ: ${item.title}` : undefined}
@@ -130,8 +130,8 @@ export default function Composer({
                   : undefined
               }
             />
-            <VStack gap={2} width="100%">
-              <HStack gap={1.5} wrap="wrap" vAlign="center">
+            <VStack gap={3} width="100%">
+              <HStack gap={2} wrap="wrap" vAlign="center">
                 <Token label={item.sourceName} size="sm" color="gray" />
                 {item.author ? (
                   <Text type="supporting" color="secondary">
@@ -140,7 +140,7 @@ export default function Composer({
                 ) : null}
               </HStack>
               <Heading level={2}>{item.title}</Heading>
-              <HStack gap={2} wrap="wrap">
+              <HStack gap={3} wrap="wrap">
                 <Button
                   label="Open original"
                   variant="secondary"
@@ -165,8 +165,8 @@ export default function Composer({
 
         <Divider />
 
-        <HStack gap={2} wrap="wrap" vAlign="center" hAlign="between">
-          <HStack gap={2} wrap="wrap">
+        <HStack gap={3} wrap="wrap" vAlign="center" hAlign="between">
+          <HStack gap={3} wrap="wrap">
             <Button
               label={
                 caption
@@ -186,15 +186,15 @@ export default function Composer({
               onClick={() => setShowSettings((value) => !value)}
             />
           </HStack>
-          <HStack gap={1.5} wrap="wrap">
+          <HStack gap={2} wrap="wrap">
             {cached ? <Token label="Session draft" size="sm" color="green" /> : null}
             {model ? <Token label={model} size="sm" color="gray" /> : null}
           </HStack>
         </HStack>
 
         {showSettings ? (
-          <Section variant="muted" padding={4}>
-            <VStack gap={4}>
+          <Section variant="muted" padding={5}>
+            <VStack gap={5}>
               <Heading level={3}>Output settings</Heading>
               <TextInput
                 label="Writer credit"
@@ -210,9 +210,9 @@ export default function Composer({
                   onSettingsChange({ ...settings, coreHashtags })
                 }
               />
-              <VStack gap={1.5}>
+              <VStack gap={2}>
                 <Text type="label">Divider style</Text>
-                <HStack gap={2} wrap="wrap">
+                <HStack gap={3} wrap="wrap">
                   <Button
                     label="Em dash"
                     variant={
@@ -264,9 +264,9 @@ export default function Composer({
         ) : null}
 
         {caption ? (
-          <Section variant="section" padding={4}>
-            <VStack gap={3}>
-              <HStack gap={2} wrap="wrap" hAlign="between" vAlign="center">
+          <Section variant="section" padding={5}>
+            <VStack gap={4}>
+              <HStack gap={3} wrap="wrap" hAlign="between" vAlign="center">
                 <VStack gap={0.5}>
                   <Heading level={3}>Facebook draft</Heading>
                   <Text type="supporting" color="secondary">
@@ -305,7 +305,7 @@ export default function Composer({
                 }
                 onChange={onCaptionChange}
               />
-              <HStack gap={2} wrap="wrap">
+              <HStack gap={3} wrap="wrap">
                 <CopyButton value={caption} label="Copy caption" />
                 {item.imageUrl ? (
                   <Button

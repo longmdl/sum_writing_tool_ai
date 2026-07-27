@@ -7,7 +7,6 @@ export interface Preferences {
   settings: PostSettings;
   sources: SourceId[];
   includeSourceUrl: boolean;
-  themeMode: "light" | "dark";
 }
 
 const STORAGE_KEY = "sum-editorial/v4";
@@ -42,7 +41,6 @@ function defaults(sources: SourceId[]): Preferences {
     settings: DEFAULT_SETTINGS,
     sources,
     includeSourceUrl: false,
-    themeMode: "dark",
   };
 }
 
@@ -89,7 +87,6 @@ function read(fallbackSources: SourceId[]): Preferences {
       settings: savedSettings,
       sources,
       includeSourceUrl: saved.includeSourceUrl === true,
-      themeMode: saved.themeMode === "dark" ? "dark" : "light",
     };
   } catch {
     // Corrupt or blocked storage just means defaults.

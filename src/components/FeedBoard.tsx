@@ -47,7 +47,7 @@ export default function FeedBoard({
   if (loading && items.length === 0) {
     return (
       <List
-        density="balanced"
+        density="spacious"
         hasDividers
         aria-busy="true"
         aria-label="Đang load News Feed"
@@ -70,7 +70,7 @@ export default function FeedBoard({
   }
 
   return (
-    <List density="balanced" hasDividers aria-label="Latest motorsport stories">
+    <List density="spacious" hasDividers aria-label="Latest motorsport stories">
       {items.map((item, index) => {
         const fresh = freshness(item.publishedAt);
 

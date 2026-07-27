@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      data-theme="light"
+      data-theme="dark"
       className={`${archivo.variable} ${beVietnam.variable} ${plexMono.variable}`}
     >
       <body>{children}</body>

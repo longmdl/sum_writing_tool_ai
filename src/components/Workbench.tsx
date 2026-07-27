@@ -5,10 +5,8 @@ import Image from "next/image";
 import {
   ArrowLeft,
   FileText,
-  Moon,
   Newspaper,
   RefreshCw,
-  Sun,
 } from "lucide-react";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Banner } from "@astryxdesign/core/Banner";
@@ -178,15 +176,6 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     [prefs, savePrefs],
   );
 
-  const toggleTheme = useCallback(
-    () =>
-      savePrefs({
-        ...prefs,
-        themeMode: prefs.themeMode === "dark" ? "light" : "dark",
-      }),
-    [prefs, savePrefs],
-  );
-
   const selectItem = useCallback(
     (item: NewsItem) => {
       setSelected(item);
@@ -272,10 +261,11 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     <VStack height="100%" gap={0}>
       <Toolbar
         label="News Feed controls"
-        size="md"
+        size="lg"
+        gap={3}
         variant="section"
         startContent={
-          <VStack gap={0}>
+          <VStack gap={0.5}>
             <Heading level={1}>News Feed</Heading>
             <Text type="supporting" color="secondary">
               50-story motorsport mix
@@ -356,7 +346,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       height="fill"
       start={
         <LayoutPanel
-          width={400}
+          width={440}
           padding={0}
           hasDivider
           label="Latest News Feed"
@@ -371,7 +361,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     </Layout>
   ) : selected ? (
     <VStack gap={0}>
-      <Section variant="muted" padding={2} dividers={["bottom"]}>
+      <Section variant="muted" padding={3} dividers={["bottom"]}>
         <Button
           label="Back to News Feed"
           variant="ghost"
@@ -398,27 +388,28 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     );
 
   const workspaceTabs = (
-    <TabList
-      value={workspaceTab}
-      onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
-      layout={isDesktop ? "hug" : "fill"}
-      hasDivider
-    >
-      <Tab
-        value="feed"
-        label="News Feed"
-        icon={<Newspaper size={16} aria-hidden />}
-      />
-      <Tab
-        value="manual"
-        label="Manual Article"
-        icon={<FileText size={16} aria-hidden />}
-      />
-    </TabList>
+    <Section variant="section" padding={2} dividers={["bottom"]}>
+      <TabList
+        value={workspaceTab}
+        onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
+        layout={isDesktop ? "hug" : "fill"}
+      >
+        <Tab
+          value="feed"
+          label="News Feed"
+          icon={<Newspaper size={16} aria-hidden />}
+        />
+        <Tab
+          value="manual"
+          label="Manual Article"
+          icon={<FileText size={16} aria-hidden />}
+        />
+      </TabList>
+    </Section>
   );
 
   return (
-    <Theme theme={sumWorkspaceTheme} mode={prefs.themeMode}>
+    <Theme theme={sumWorkspaceTheme} mode="dark">
       <AppShell
         height={isDesktop ? "fill" : "auto"}
         variant="section"
@@ -435,6 +426,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
                     width={104}
                     height={52}
                     sizes="104px"
+                    loading="eager"
                   />
                 }
                 heading="Editorial"
@@ -442,24 +434,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
               />
             }
             endContent={
-              <HStack gap={1.5} vAlign="center">
-                <Button
-                  label={
-                    prefs.themeMode === "dark"
-                      ? "Switch to light mode"
-                      : "Switch to dark mode"
-                  }
-                  variant="ghost"
-                  icon={
-                    prefs.themeMode === "dark" ? (
-                      <Sun size={16} aria-hidden />
-                    ) : (
-                      <Moon size={16} aria-hidden />
-                    )
-                  }
-                  isIconOnly
-                  onClick={toggleTheme}
-                />
+              <HStack gap={2} vAlign="center">
                 <StatusDot
                   variant={feedError ? "error" : loading ? "warning" : "success"}
                   label={

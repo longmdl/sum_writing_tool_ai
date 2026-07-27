@@ -179,10 +179,11 @@ export default function ManualArticleWorkspace({
     <VStack height={isDesktop ? "100%" : undefined} gap={0}>
       <Toolbar
         label="Manual article controls"
-        size="md"
+        size="lg"
+        gap={3}
         variant="section"
         startContent={
-          <VStack gap={0}>
+          <VStack gap={0.5}>
             <Heading level={1}>Manual Article</Heading>
             <Text type="supporting" color="secondary">
               Paste full text when a source cannot be scraped
@@ -191,8 +192,8 @@ export default function ManualArticleWorkspace({
         }
       />
       <StackItem size={isDesktop ? "fill" : undefined} isScrollable={isDesktop}>
-        <VStack gap={4} padding={4}>
-          <Section variant="muted" padding={3}>
+        <VStack gap={5} padding={5}>
+          <Section variant="muted" padding={4}>
             <Text type="supporting" color="secondary">
               Nội dung chỉ được gửi vào AI context khi bạn bấm Generate. Tool
               giữ trong tab session và không lưu article này vào feed.
@@ -293,19 +294,19 @@ export default function ManualArticleWorkspace({
   );
 
   const outputPanel = (
-    <VStack height={isDesktop ? "100%" : undefined} hAlign="center" padding={5}>
-      <VStack width="100%" maxWidth={820} gap={4}>
+    <VStack height={isDesktop ? "100%" : undefined} hAlign="center" padding={6}>
+      <VStack width="100%" maxWidth={860} gap={5}>
         {caption ? (
-          <Section variant="section" padding={4}>
-            <VStack gap={3}>
-              <HStack gap={2} wrap="wrap" hAlign="between" vAlign="center">
+          <Section variant="section" padding={5}>
+            <VStack gap={4}>
+              <HStack gap={3} wrap="wrap" hAlign="between" vAlign="center">
                 <VStack gap={0.5}>
                   <Heading level={2}>Vietnamese caption</Heading>
                   <Text type="supporting" color="secondary">
                     Review và edit trước khi publish.
                   </Text>
                 </VStack>
-                <HStack gap={1.5} wrap="wrap">
+                <HStack gap={2} wrap="wrap">
                   {model ? <Token label={model} size="sm" color="gray" /> : null}
                   <Text
                     type="supporting"
@@ -333,7 +334,7 @@ export default function ManualArticleWorkspace({
                 }
                 onChange={(value) => updateSession({ caption: value })}
               />
-              <HStack gap={2} wrap="wrap">
+              <HStack gap={3} wrap="wrap">
                 <CopyCaptionButton caption={caption} />
               </HStack>
             </VStack>
@@ -366,7 +367,7 @@ export default function ManualArticleWorkspace({
       height="fill"
       start={
         <LayoutPanel
-          width={480}
+          width={520}
           padding={0}
           hasDivider
           label="Manual article input"
