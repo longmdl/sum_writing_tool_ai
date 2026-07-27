@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Track surfaces — the incoming-data side of the wall. */
+  --color-asphalt: #14161b;
+  --color-carbon: #1d2027;
+  --color-carbon-hi: #262a33;
+  --color-guardrail: #343945;
+
+  /* Paper — the outgoing-copy side. Warm grey stock, not cream. */
+  --color-paper: #e8e3d9;
+  --color-paper-hi: #f2eee6;
+  --color-ink: #16181d;
+  --color-ink-soft: #55596a;
+
+  /* F1 timing semantics. Every motorsport fan reads these instantly. */
+  --color-purple: #a96bff;
+  --color-green: #3fd97f;
+  --color-yellow: #f5c518;
+  --color-flag: #d6202f;
+
+  --color-dim: #8b91a3;
+
+  --font-display: var(--font-archivo), system-ui, sans-serif;
+  --font-body: var(--font-be-vietnam), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-asphalt);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-asphalt);
+  color: #e7e9ef;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard focus stays visible everywhere — admins work fast and tab a lot. */
+:focus-visible {
+  outline: 2px solid var(--color-yellow);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The timing board's leading edge: a hairline that picks up the delta colour. */
+.delta-edge {
+  box-shadow: inset 3px 0 0 0 var(--edge, transparent);
+}
+
+.paper-grain {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgb(22 24 29 / 0.045) 1px,
+    transparent 0
+  );
+  background-size: 4px 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbars that belong to the timing screen rather than the OS. */
+.board-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.board-scroll::-webkit-scrollbar-track {
+  background: var(--color-asphalt);
+}
+.board-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-guardrail);
+  border-radius: 999px;
 }
