@@ -66,9 +66,8 @@ export function buildCaption(
       : `Nguồn: ${item.sourceName}`,
   );
 
-  if (settings.author.trim()) {
-    lines.push(`I❤️ Credit soạn bài: ${settings.author.trim()}`);
-  }
+  const author = settings.author.trim();
+  lines.push(author ? `I❤️ Credit soạn bài: ${author}` : "I❤️ Credit soạn bài:");
   if (settings.discordLine.trim()) lines.push(settings.discordLine.trim());
 
   // Core tags always lead, then the model's topic tags, deduped.
