@@ -1,4 +1,13 @@
-export type SourceId = "formula1" | "motorsport" | "traxion" | "racefans";
+export type SourceId =
+  | "formula1"
+  | "motorsport"
+  | "traxion"
+  | "racefans"
+  | "motogp"
+  | "wec"
+  | "gt"
+  | "imsa"
+  | "gtwc";
 
 /**
  * What the publisher's robots.txt says about AI use. Surfaced in the UI so an
@@ -16,9 +25,11 @@ export interface SourcePolicy {
 export interface Source {
   id: SourceId;
   name: string;
+  /** Compact label used in the source picker; attribution always uses `name`. */
+  shortName?: string;
   feedUrl: string;
   homepage: string;
-  /** Enabled by default only for sources that place no restriction on AI use. */
+  /** Whether this feed is included in the default editorial queue. */
   defaultEnabled: boolean;
   /**
    * formula1.com's feed omits pubDate and images, so each item needs one extra

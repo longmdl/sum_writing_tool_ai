@@ -80,7 +80,7 @@ async function fetchFeed(
   }
   const refreshParam = forceFresh ? "&refresh=1" : "";
   const response = await fetch(
-    `/api/feed?limit=25&sources=${sourceIds.join(",")}${refreshParam}`,
+    `/api/feed?limit=50&sources=${sourceIds.join(",")}${refreshParam}`,
     { cache: "no-store" },
   );
   const data = (await response.json()) as FeedResponse;
@@ -278,7 +278,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           <VStack gap={0}>
             <Heading level={1}>News Feed</Heading>
             <Text type="supporting" color="secondary">
-              25 latest motorsport stories
+              50-story motorsport mix
               {updatedLabel ? ` · updated ${updatedLabel}` : ""}
             </Text>
           </VStack>

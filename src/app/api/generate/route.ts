@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   // Re-resolve the story from the (cached) feed rather than trusting the client.
   // This keeps the endpoint from being used to summarise arbitrary text, and
   // guarantees the attribution matches a source the admin actually enabled.
-  const { items } = await scrapeLatest(sourceIds, 25);
+  const { items } = await scrapeLatest(sourceIds, 50);
   const item = items.find((candidate) => candidate.id === id);
 
   if (!item) {

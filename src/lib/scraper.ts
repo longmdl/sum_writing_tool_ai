@@ -11,6 +11,8 @@ const FEED_TTL_SECONDS = 300;
 const ARTICLE_TTL_SECONDS = 86_400;
 
 const ENRICH_CONCURRENCY = 5;
+/** Keep specialist disciplines visible when F1 publishes at race-weekend volume. */
+const MIN_ITEMS_PER_SOURCE = 3;
 
 export interface ScrapeResult {
   items: NewsItem[];
@@ -161,7 +163,7 @@ const SOURCE_PRIORITY = new Map(SOURCES.map((s, index) => [s.id, index]));
 
 export async function scrapeLatest(
   sourceIds: SourceId[],
-  limit = 25,
+  limit = 50,
   forceFresh = false,
 ): Promise<ScrapeResult> {
   const sources = sourceIds
@@ -201,14 +203,35 @@ export async function scrapeLatest(
     if (incomingRank < existingRank) byTitle.set(key, item);
   }
 
-  const items = [...byTitle.values()]
-    .sort((a, b) => {
-      // Undated items sort last rather than pretending to be from 1970.
-      const at = a.publishedAt ? Date.parse(a.publishedAt) : -Infinity;
-      const bt = b.publishedAt ? Date.parse(b.publishedAt) : -Infinity;
-      return bt - at;
-    })
-    .slice(0, limit);
+  const byNewest = (a: NewsItem, b: NewsItem) => {
+    // Undated items sort last rather than pretending to be from 1970.
+    const at = a.publishedAt ? Date.parse(a.publishedAt) : -Infinity;
+    const bt = b.publishedAt ? Date.parse(b.publishedAt) : -Infinity;
+    return bt - at;
+  };
+  const sorted = [...byTitle.values()].sort(byNewest);
+
+  const diversityFloor = Math.min(
+    MIN_ITEMS_PER_SOURCE,
+    Math.floor(limit / Math.max(sources.length, 1)),
+  );
+  const selected = new Map<string, NewsItem>();
+
+  if (diversityFloor > 0 && sources.length > 1) {
+    for (const source of sources) {
+      const specialistItems = sorted
+        .filter((item) => item.sourceId === source.id)
+        .slice(0, diversityFloor);
+      for (const item of specialistItems) selected.set(item.id, item);
+    }
+  }
+
+  for (const item of sorted) {
+    if (selected.size >= limit) break;
+    selected.set(item.id, item);
+  }
+
+  const items = [...selected.values()].sort(byNewest).slice(0, limit);
 
   return { items, errors };
 }

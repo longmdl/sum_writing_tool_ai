@@ -10,10 +10,18 @@ export interface Preferences {
   themeMode: "light" | "dark";
 }
 
-const STORAGE_KEY = "sum-editorial/v3";
-const PREVIOUS_STORAGE_KEY = "sum-editorial/v2";
+const STORAGE_KEY = "sum-editorial/v4";
+const PREVIOUS_STORAGE_KEY = "sum-editorial/v3";
+const OLDER_STORAGE_KEY = "sum-editorial/v2";
 const LEGACY_STORAGE_KEY = "sum-pit-wall/v1";
 const NEW_DEFAULT_SOURCES: SourceId[] = ["traxion", "racefans"];
+const NEW_MOTORSPORT_SOURCES: SourceId[] = [
+  "motogp",
+  "wec",
+  "gt",
+  "imsa",
+  "gtwc",
+];
 
 /**
  * localStorage-backed store read through useSyncExternalStore.
@@ -51,11 +59,15 @@ function read(fallbackSources: SourceId[]): Preferences {
     const previous = current
       ? null
       : window.localStorage.getItem(PREVIOUS_STORAGE_KEY);
-    const legacy =
+    const older =
       current || previous
         ? null
+        : window.localStorage.getItem(OLDER_STORAGE_KEY);
+    const legacy =
+      current || previous || older
+        ? null
         : window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    const raw = current ?? previous ?? legacy;
+    const raw = current ?? previous ?? older ?? legacy;
     if (!raw) return base;
     const saved = JSON.parse(raw) as Partial<Preferences>;
     const savedSettings = { ...DEFAULT_SETTINGS, ...(saved.settings ?? {}) };
@@ -66,9 +78,12 @@ function read(fallbackSources: SourceId[]): Preferences {
       Array.isArray(saved.sources) && saved.sources.length > 0
         ? saved.sources
         : base.sources;
-    const sources = legacy
-      ? [...new Set([...savedSources, ...NEW_DEFAULT_SOURCES])]
-      : savedSources;
+    const migrationSources = legacy
+      ? [...NEW_DEFAULT_SOURCES, ...NEW_MOTORSPORT_SOURCES]
+      : NEW_MOTORSPORT_SOURCES;
+    const sources = current
+      ? savedSources
+      : [...new Set([...savedSources, ...migrationSources])];
 
     return {
       settings: savedSettings,

@@ -12,7 +12,7 @@ line or two, copies the caption, grabs the image, and posts.
 ## How it works
 
 ```
-RSS feeds  ─►  scraper  ─►  10 newest, merged + deduped  ─►  admin picks one
+RSS feeds  ─►  scraper  ─►  50-story mixed queue, deduped  ─►  admin picks one
    (free)                        (free)                          (free)
                                                                     │
                                                       admin clicks generate
@@ -41,7 +41,7 @@ F1 NEWS
 F1 vừa chính thức xác nhận sẽ trở lại đường đua Sepang…
 ————————
 Nguồn: Formula1.com
-I❤️ Credit soạn bài: Sennar
+I❤️ Credit soạn bài:
 I✒️ Hãy chung tay đóng góp và chia sẻ content qua Discord của SUM
 #SUM #clubhouse #Thethaotocdo #Vanhoaxe #F1 #bangtinF1 #F1News
 Tham gia CLB ngay hôm nay
@@ -52,15 +52,19 @@ Tham gia CLB ngay hôm nay
 | Source | Default | Notes |
 | --- | --- | --- |
 | Formula 1 (official) | on | No AI restrictions. Feed has no dates or images, so each article page is read for `og:image` and `datePublished` — nothing else. |
-| Motorsport.com | on | No AI restrictions. Dates and images come straight from the feed. |
-| Traxion.GG | off | `Content-Signal: ai-train=no, use=reference`. Permits reference use; forbids training. |
-| RaceFans | off | Same signal as Traxion. |
+| Motorsport.com F1 | on | No AI restrictions. Dates and images come straight from the feed. |
+| Traxion.GG | on | `Content-Signal: ai-train=no, use=reference`. Permits reference use; forbids training. |
+| RaceFans | on | Same signal as Traxion. |
+| Motorsport.com MotoGP | on | Public MotoGP category RSS. |
+| Motorsport.com WEC | on | Public World Endurance Championship category RSS. |
+| Motorsport.com GT | on | Public international GT racing category RSS. |
+| Motorsport.com IMSA | on | Public IMSA category RSS. |
+| GT World Challenge | on | Official GT World Challenge Europe public RSS. |
 
-The two restricted sources ship **off by default** and are marked with ▲ in the
-UI. This tool never trains on anything, only ever reads the publisher's own RSS
-excerpt, and always prints `Nguồn:` — which is the "reference" use those
-publishers permit. Enabling them is your call. Re-check `robots.txt` occasionally;
-publishers change these.
+The two restricted sources are marked with ▲ in the UI. This tool never trains
+on anything, only ever reads the publisher's own RSS excerpt, and always prints
+`Nguồn:` — which is the "reference" use those publishers permit. Re-check
+`robots.txt` occasionally; publishers change these.
 
 **Never remove the `Nguồn:` line from a generated caption.**
 
@@ -140,17 +144,17 @@ src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
 src/lib/openai.ts           model call + response validation
 src/lib/caption.ts          deterministic footer assembly
 src/lib/freshness.ts        age → F1 timing colours
-src/app/api/feed/           GET  the 10 newest stories
+src/app/api/feed/           GET  the 50-story mixed queue
 src/app/api/generate/       POST a story id → caption
 src/components/             timing board (dark) + composer (paper)
 ```
 
 ### Design
 
-The screen is a pit wall. The left board is incoming data — dark, monospace,
-ranked 01–10, with each story's age shown in F1 timing colours (purple newest,
-then green, yellow, grey). The right side is outgoing copy on paper. The two
-surfaces look different on purpose: machine data in, human writing out.
+The screen is a dense editorial workspace. The left board ranks the 50 newest
+stories across F1, MotoGP, WEC, GT, IMSA, sim racing, and general motorsport,
+with each story's age shown in F1 timing colours. The right side is the editable
+caption workspace.
 
 Body text is set in Be Vietnam Pro, chosen because everything this tool produces
 is Vietnamese and most grotesques set the stacked diacritics badly.

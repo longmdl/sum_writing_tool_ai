@@ -1,7 +1,7 @@
 /**
  * Dependency-free RSS 2.0 reader.
  *
- * Deliberately small: the four feeds we read are well-formed RSS with a stable
+ * Deliberately small: the feeds we read are well-formed RSS with a stable
  * shape, so a full XML parser would be weight we never use. It handles CDATA,
  * numeric and named entities, and the handful of namespaced tags these
  * publishers actually emit.

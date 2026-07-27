@@ -36,7 +36,7 @@ export default function SourcePicker({
           return (
             <Token
               key={source.id}
-              label={source.name}
+              label={source.shortName ?? source.name}
               size="sm"
               color={isEnabled ? "green" : "gray"}
               icon={restricted ? <AlertTriangle size={14} aria-hidden /> : undefined}

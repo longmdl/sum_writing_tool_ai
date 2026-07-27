@@ -5,7 +5,7 @@ import { DEFAULT_SOURCE_IDS, SOURCES, isSourceId } from "@/lib/sources";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_LIMIT = 25;
+const MAX_LIMIT = 50;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -18,10 +18,10 @@ export async function GET(request: Request) {
 
   const sourceIds = requested.length > 0 ? requested : DEFAULT_SOURCE_IDS;
 
-  const parsedLimit = Number.parseInt(searchParams.get("limit") ?? "25", 10);
+  const parsedLimit = Number.parseInt(searchParams.get("limit") ?? "50", 10);
   const limit = Number.isFinite(parsedLimit)
     ? Math.min(Math.max(parsedLimit, 1), MAX_LIMIT)
-    : 25;
+    : 50;
   const forceFresh = searchParams.get("refresh") === "1";
 
   try {
