@@ -16,8 +16,11 @@ let client: OpenAI | null = null;
 function getClient(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
+    // The fix differs by environment, so point at the right one.
     throw new Error(
-      "OPENAI_API_KEY is not set. Copy .env.example to .env.local and add your key.",
+      process.env.VERCEL
+        ? "OPENAI_API_KEY is not set. Add it in Vercel → Project Settings → Environment Variables, then redeploy."
+        : "OPENAI_API_KEY is not set. Copy .env.example to .env.local and add your key.",
     );
   }
   client ??= new OpenAI({ apiKey });
