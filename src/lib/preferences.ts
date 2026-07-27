@@ -34,7 +34,7 @@ function defaults(sources: SourceId[]): Preferences {
     settings: DEFAULT_SETTINGS,
     sources,
     includeSourceUrl: false,
-    themeMode: "light",
+    themeMode: "dark",
   };
 }
 
