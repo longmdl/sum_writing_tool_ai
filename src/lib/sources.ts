@@ -4,11 +4,9 @@ import type { Source, SourceId } from "./types";
  * Source registry.
  *
  * `policy` records what each publisher's robots.txt said when this file was
- * written (checked 2026-07-27). Two of these publishers set
- * `Content-Signal: ai-train=no, use=reference` and Disallow named training
- * crawlers. This tool never trains on anything and always links back, which is
- * the "reference" use they permit — but the decision to enable them is the
- * admin's, so they ship off by default with the signal shown in the UI.
+ * written (checked 2026-07-27). Two publishers set
+ * `Content-Signal: ai-train=no, use=reference` and disallow named training
+ * crawlers. This tool performs reference use only and always links back.
  *
  * Re-check these values periodically; publishers change them.
  */
@@ -44,7 +42,7 @@ export const SOURCES: Source[] = [
     name: "Traxion.GG",
     feedUrl: "https://traxion.gg/feed/",
     homepage: "https://traxion.gg",
-    defaultEnabled: false,
+    defaultEnabled: true,
     needsEnrichment: false,
     policy: {
       contentSignal: "search=yes, ai-train=no, use=reference",
@@ -57,7 +55,7 @@ export const SOURCES: Source[] = [
     name: "RaceFans",
     feedUrl: "https://www.racefans.net/feed/",
     homepage: "https://www.racefans.net",
-    defaultEnabled: false,
+    defaultEnabled: true,
     needsEnrichment: false,
     policy: {
       contentSignal: "search=yes, ai-train=no, use=reference",

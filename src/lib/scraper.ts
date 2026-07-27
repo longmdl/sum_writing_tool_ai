@@ -17,13 +17,19 @@ export interface ScrapeResult {
   errors: { sourceId: SourceId; sourceName: string; message: string }[];
 }
 
-async function fetchText(url: string, revalidate: number): Promise<string> {
+async function fetchText(
+  url: string,
+  revalidate: number,
+  forceFresh = false,
+): Promise<string> {
   const response = await fetch(url, {
     headers: {
       "User-Agent": USER_AGENT,
       Accept: "application/rss+xml, application/xml, text/xml, text/html;q=0.9",
     },
-    next: { revalidate },
+    ...(forceFresh
+      ? { cache: "no-store" as const }
+      : { next: { revalidate } }),
   });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
@@ -106,9 +112,15 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-async function loadSource(source: Source): Promise<NewsItem[]> {
-  const xml = await fetchText(source.feedUrl, FEED_TTL_SECONDS);
+async function loadSource(
+  source: Source,
+  forceFresh: boolean,
+): Promise<NewsItem[]> {
+  const xml = await fetchText(source.feedUrl, FEED_TTL_SECONDS, forceFresh);
   const raw = parseRss(xml);
+  if (raw.length === 0) {
+    throw new Error("Feed returned no readable items");
+  }
 
   const items: NewsItem[] = raw
     .filter((entry) => entry.title && entry.link)
@@ -127,6 +139,9 @@ async function loadSource(source: Source): Promise<NewsItem[]> {
         categories: entry.categories,
       };
     });
+  if (items.length === 0) {
+    throw new Error("Feed returned no readable items");
+  }
 
   if (!source.needsEnrichment) return items;
   return mapWithConcurrency(items, ENRICH_CONCURRENCY, enrich);
@@ -146,13 +161,16 @@ const SOURCE_PRIORITY = new Map(SOURCES.map((s, index) => [s.id, index]));
 
 export async function scrapeLatest(
   sourceIds: SourceId[],
-  limit = 10,
+  limit = 25,
+  forceFresh = false,
 ): Promise<ScrapeResult> {
   const sources = sourceIds
     .map((id) => SOURCE_BY_ID.get(id))
     .filter((s): s is Source => Boolean(s));
 
-  const settled = await Promise.allSettled(sources.map(loadSource));
+  const settled = await Promise.allSettled(
+    sources.map((source) => loadSource(source, forceFresh)),
+  );
 
   const errors: ScrapeResult["errors"] = [];
   const collected: NewsItem[] = [];

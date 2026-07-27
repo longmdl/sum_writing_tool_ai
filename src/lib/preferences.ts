@@ -7,9 +7,12 @@ export interface Preferences {
   settings: PostSettings;
   sources: SourceId[];
   includeSourceUrl: boolean;
+  themeMode: "light" | "dark";
 }
 
-const STORAGE_KEY = "sum-pit-wall/v1";
+const STORAGE_KEY = "sum-editorial/v2";
+const LEGACY_STORAGE_KEY = "sum-pit-wall/v1";
+const NEW_DEFAULT_SOURCES: SourceId[] = ["traxion", "racefans"];
 
 /**
  * localStorage-backed store read through useSyncExternalStore.
@@ -26,7 +29,12 @@ let serverSnapshot: Preferences | null = null;
 let cache: Preferences | null = null;
 
 function defaults(sources: SourceId[]): Preferences {
-  return { settings: DEFAULT_SETTINGS, sources, includeSourceUrl: false };
+  return {
+    settings: DEFAULT_SETTINGS,
+    sources,
+    includeSourceUrl: false,
+    themeMode: "light",
+  };
 }
 
 /** Referentially stable across calls — useSyncExternalStore requires it. */
@@ -38,16 +46,24 @@ export function getServerSnapshot(fallbackSources: SourceId[]): Preferences {
 function read(fallbackSources: SourceId[]): Preferences {
   const base = defaults(fallbackSources);
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const current = window.localStorage.getItem(STORAGE_KEY);
+    const legacy = current ? null : window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    const raw = current ?? legacy;
     if (!raw) return base;
     const saved = JSON.parse(raw) as Partial<Preferences>;
+    const savedSources =
+      Array.isArray(saved.sources) && saved.sources.length > 0
+        ? saved.sources
+        : base.sources;
+    const sources = legacy
+      ? [...new Set([...savedSources, ...NEW_DEFAULT_SOURCES])]
+      : savedSources;
+
     return {
       settings: { ...DEFAULT_SETTINGS, ...(saved.settings ?? {}) },
-      sources:
-        Array.isArray(saved.sources) && saved.sources.length > 0
-          ? saved.sources
-          : base.sources,
+      sources,
       includeSourceUrl: saved.includeSourceUrl === true,
+      themeMode: saved.themeMode === "dark" ? "dark" : "light",
     };
   } catch {
     // Corrupt or blocked storage just means defaults.

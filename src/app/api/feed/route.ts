@@ -18,19 +18,23 @@ export async function GET(request: Request) {
 
   const sourceIds = requested.length > 0 ? requested : DEFAULT_SOURCE_IDS;
 
-  const parsedLimit = Number.parseInt(searchParams.get("limit") ?? "10", 10);
+  const parsedLimit = Number.parseInt(searchParams.get("limit") ?? "25", 10);
   const limit = Number.isFinite(parsedLimit)
     ? Math.min(Math.max(parsedLimit, 1), MAX_LIMIT)
-    : 10;
+    : 25;
+  const forceFresh = searchParams.get("refresh") === "1";
 
   try {
-    const { items, errors } = await scrapeLatest(sourceIds, limit);
-    return NextResponse.json({
-      items,
-      errors,
-      sources: SOURCES,
-      fetchedAt: new Date().toISOString(),
-    });
+    const { items, errors } = await scrapeLatest(sourceIds, limit, forceFresh);
+    return NextResponse.json(
+      {
+        items,
+        errors,
+        sources: SOURCES,
+        fetchedAt: new Date().toISOString(),
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     return NextResponse.json(
       {

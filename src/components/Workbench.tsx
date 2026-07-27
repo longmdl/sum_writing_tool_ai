@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Moon, RefreshCw, Sun } from "lucide-react";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Banner } from "@astryxdesign/core/Banner";
@@ -60,12 +60,16 @@ interface FeedResponse {
 }
 
 /** Pure fetch — never touches state, so the effect below stays side-effect free. */
-async function fetchFeed(sourceIds: SourceId[]): Promise<FeedResponse> {
+async function fetchFeed(
+  sourceIds: SourceId[],
+  forceFresh: boolean,
+): Promise<FeedResponse> {
   if (sourceIds.length === 0) {
     return { items: [], errors: [], fetchedAt: new Date().toISOString() };
   }
+  const refreshParam = forceFresh ? "&refresh=1" : "";
   const response = await fetch(
-    `/api/feed?limit=10&sources=${sourceIds.join(",")}`,
+    `/api/feed?limit=25&sources=${sourceIds.join(",")}${refreshParam}`,
     { cache: "no-store" },
   );
   const data = (await response.json()) as FeedResponse;
@@ -113,7 +117,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
 
     void (async () => {
       try {
-        const data = await fetchFeed(sourceIds);
+        const data = await fetchFeed(sourceIds, refreshNonce > 0);
         if (cancelled) return;
         setItems(data.items);
         setFeedErrors(data.errors ?? []);
@@ -157,6 +161,15 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
 
   const setIncludeSourceUrl = useCallback(
     (includeSourceUrl: boolean) => savePrefs({ ...prefs, includeSourceUrl }),
+    [prefs, savePrefs],
+  );
+
+  const toggleTheme = useCallback(
+    () =>
+      savePrefs({
+        ...prefs,
+        themeMode: prefs.themeMode === "dark" ? "light" : "dark",
+      }),
     [prefs, savePrefs],
   );
 
@@ -251,7 +264,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           <VStack gap={0}>
             <Heading level={1}>Hàng đợi tin</Heading>
             <Text type="supporting" color="secondary">
-              10 tin motorsport mới nhất
+              25 tin motorsport mới nhất
               {updatedLabel ? ` · cập nhật ${updatedLabel}` : ""}
             </Text>
           </VStack>
@@ -325,7 +338,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   );
 
   return (
-    <Theme theme={sumWorkspaceTheme} mode="light">
+    <Theme theme={sumWorkspaceTheme} mode={prefs.themeMode}>
       <AppShell
         height={isDesktop ? "fill" : "auto"}
         variant="section"
@@ -343,6 +356,23 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
             }
             endContent={
               <HStack gap={1.5} vAlign="center">
+                <Button
+                  label={
+                    prefs.themeMode === "dark"
+                      ? "Bật chế độ sáng"
+                      : "Bật chế độ tối"
+                  }
+                  variant="ghost"
+                  icon={
+                    prefs.themeMode === "dark" ? (
+                      <Sun size={16} aria-hidden />
+                    ) : (
+                      <Moon size={16} aria-hidden />
+                    )
+                  }
+                  isIconOnly
+                  onClick={toggleTheme}
+                />
                 <StatusDot
                   variant={feedError ? "error" : loading ? "warning" : "success"}
                   label={
