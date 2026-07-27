@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import {
   ArrowLeft,
   FileText,
@@ -10,7 +11,6 @@ import {
   Sun,
 } from "lucide-react";
 import { AppShell } from "@astryxdesign/core/AppShell";
-import { Badge } from "@astryxdesign/core/Badge";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { Heading } from "@astryxdesign/core/Heading";
@@ -428,8 +428,15 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
             label="SUM Editorial navigation"
             heading={
               <TopNavHeading
-                logo={<Badge label="SUM" variant="yellow" />}
-                superheading="Saigon United Motorsports"
+                logo={
+                  <Image
+                    src="/sum-logo.png"
+                    alt=""
+                    width={104}
+                    height={52}
+                    sizes="104px"
+                  />
+                }
                 heading="Editorial"
                 headingHref="/"
               />
