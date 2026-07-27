@@ -187,7 +187,7 @@ export default function Composer({
             />
           </HStack>
           <HStack gap={2} wrap="wrap">
-            {cached ? <Token label="Session draft" size="sm" color="green" /> : null}
+            {cached ? <Token label="Cached draft" size="sm" color="green" /> : null}
             {model ? <Token label={model} size="sm" color="gray" /> : null}
           </HStack>
         </HStack>

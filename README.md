@@ -26,8 +26,9 @@ RSS feeds  ─►  scraper  ─►  50-story mixed queue, deduped  ─►  admin
 
 **Nothing calls the model until you click generate.** Browsing the feed and
 selecting stories costs zero tokens — it is all RSS. Generated posts are cached
-per story for the session, so switching stories and coming back does not re-spend;
-only the explicit **Soạn lại (tốn token)** button pays again.
+in Supabase for 30 days, so the same inputs can be reused without another model
+call. The **Generated Work** tab lists every unexpired cached caption. Only the
+explicit **Regenerate** button pays again and replaces that cache entry.
 
 The model writes only **header tag, body, list, hook, topic hashtags**. The
 divider, `Nguồn:` credit, Discord line, core hashtags, and CTA are assembled in
@@ -75,6 +76,8 @@ on anything, only ever reads the publisher's own RSS excerpt, and always prints
 ```bash
 npm install
 cp .env.example .env.local     # then paste your OpenAI key into .env.local
+npx supabase link              # select the SUM Supabase project
+npx supabase db push           # creates generated_posts + daily retention job
 npm run dev
 ```
 
@@ -86,9 +89,19 @@ Open http://localhost:3000.
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | yes | — | Get one at https://platform.openai.com/api-keys |
 | `OPENAI_MODEL` | no | `gpt-4o` | Any OpenAI model supporting JSON response format |
+| `SUPABASE_URL` | yes for archive | — | Project URL from Supabase project settings |
+| `SUPABASE_SECRET_KEY` | yes for archive | — | Server-only secret key; never expose it as `NEXT_PUBLIC_*` |
 
-Without a key the feed still loads and browses fine; only generation fails, with
-a message saying so.
+Without an OpenAI key the feed still loads and browses fine; only generation
+fails. Without Supabase credentials generation still works, but captions cannot
+persist and the Generated Work tab shows a setup notice.
+
+### Generated post retention
+
+The migration in `supabase/migrations/` creates a locked-down
+`generated_posts` table. Browser roles have no access; only the server-side
+secret key can read or write it. Each row expires 30 days after generation, and
+a daily Supabase Cron job permanently deletes rows only after `expires_at`.
 
 ---
 
@@ -123,11 +136,13 @@ npm i -g vercel
 vercel login          # interactive
 vercel link
 vercel env add OPENAI_API_KEY production
+vercel env add SUPABASE_URL production
+vercel env add SUPABASE_SECRET_KEY production
 vercel --prod
 ```
 
-Or import the Git repo at https://vercel.com/new and add `OPENAI_API_KEY` under
-**Settings → Environment Variables**.
+Or import the Git repo at https://vercel.com/new and add all required variables
+under **Settings → Environment Variables**.
 
 `next.config.ts` force-includes `content/**` in the serverless bundle — without
 that the style guide is missing at runtime and generation fails.
@@ -143,9 +158,11 @@ src/lib/rss.ts              dependency-free RSS reader
 src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
 src/lib/openai.ts           model call + response validation
 src/lib/caption.ts          deterministic footer assembly
+src/lib/generated-posts.ts  Supabase-backed 30-day caption cache
 src/lib/freshness.ts        age → F1 timing colours
 src/app/api/feed/           GET  the 50-story mixed queue
 src/app/api/generate/       POST a story id → caption
+src/app/api/generated-posts GET cached Generated Work
 src/components/             timing board (dark) + composer (paper)
 ```
 

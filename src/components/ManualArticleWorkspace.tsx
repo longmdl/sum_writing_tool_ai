@@ -39,6 +39,7 @@ interface ManualGenerateResponse {
   caption?: string;
   draft?: DraftContent;
   model?: string;
+  cached?: boolean;
   error?: string;
 }
 
@@ -51,6 +52,7 @@ interface ManualSessionState {
   caption: string;
   draft: DraftContent | null;
   model: string | null;
+  cached: boolean;
 }
 
 let manualSessionState: ManualSessionState = {
@@ -62,6 +64,7 @@ let manualSessionState: ManualSessionState = {
   caption: "",
   draft: null,
   model: null,
+  cached: false,
 };
 
 function CopyCaptionButton({ caption }: { caption: string }) {
@@ -116,6 +119,7 @@ export default function ManualArticleWorkspace({
     caption,
     draft,
     model,
+    cached,
   } = session;
 
   function updateSession(patch: Partial<ManualSessionState>) {
@@ -153,6 +157,7 @@ export default function ManualArticleWorkspace({
           extraInstructions,
           settings,
           includeSourceUrl,
+          forceRegenerate: Boolean(caption),
         }),
       });
       const data = (await response.json()) as ManualGenerateResponse;
@@ -163,6 +168,7 @@ export default function ManualArticleWorkspace({
         caption: data.caption,
         draft: data.draft ?? null,
         model: data.model ?? null,
+        cached: data.cached === true,
       });
     } catch (generationError) {
       setError(
@@ -196,7 +202,8 @@ export default function ManualArticleWorkspace({
           <Section variant="muted" padding={4}>
             <Text type="supporting" color="secondary">
               Nội dung chỉ được gửi vào AI context khi bạn bấm Generate. Tool
-              giữ trong tab session và không lưu article này vào feed.
+              không lưu full article; generated caption và source metadata được
+              cache 30 ngày.
             </Text>
           </Section>
 
@@ -307,6 +314,9 @@ export default function ManualArticleWorkspace({
                   </Text>
                 </VStack>
                 <HStack gap={2} wrap="wrap">
+                  {cached ? (
+                    <Token label="30-day cache" size="sm" color="green" />
+                  ) : null}
                   {model ? <Token label={model} size="sm" color="gray" /> : null}
                   <Text
                     type="supporting"

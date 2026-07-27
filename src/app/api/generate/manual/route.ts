@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { buildCaption } from "@/lib/caption";
 import {
+  createGeneratedPostCacheKey,
+  findGeneratedPost,
+  storeGeneratedPost,
+} from "@/lib/generated-posts";
+import {
+  DEFAULT_MODEL,
   generateDraftFromManualArticle,
   type ManualArticleInput,
 } from "@/lib/openai";
@@ -82,8 +88,31 @@ export async function POST(request: Request) {
   const settings = coercePostSettings(payload.settings);
   const includeSourceUrl =
     payload.includeSourceUrl === true && Boolean(article.sourceUrl);
+  const forceRegenerate = payload.forceRegenerate === true;
+  const cacheKey = createGeneratedPostCacheKey({
+    version: 1,
+    origin: "manual",
+    model: DEFAULT_MODEL,
+    article,
+    extraInstructions,
+    settings,
+    includeSourceUrl,
+  });
 
   try {
+    if (!forceRegenerate) {
+      const cached = await findGeneratedPost(cacheKey);
+      if (cached.post) {
+        return NextResponse.json({
+          draft: cached.post.draft,
+          caption: cached.post.caption,
+          model: cached.post.model,
+          cached: true,
+          cacheStatus: cached.status,
+        });
+      }
+    }
+
     const { draft, model } = await generateDraftFromManualArticle(
       article,
       extraInstructions,
@@ -94,7 +123,23 @@ export async function POST(request: Request) {
       settings,
       { includeSourceUrl },
     );
-    return NextResponse.json({ draft, caption, model });
+    const cacheStatus = await storeGeneratedPost({
+      cacheKey,
+      origin: "manual",
+      title: article.title,
+      sourceName: article.sourceName,
+      sourceUrl: article.sourceUrl,
+      caption,
+      draft,
+      model,
+    });
+    return NextResponse.json({
+      draft,
+      caption,
+      model,
+      cached: false,
+      cacheStatus,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Generation failed unexpectedly.";

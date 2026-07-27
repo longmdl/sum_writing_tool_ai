@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import Image from "next/image";
 import {
   ArrowLeft,
+  Archive,
   FileText,
   Newspaper,
   RefreshCw,
@@ -30,6 +31,7 @@ import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { VStack } from "@astryxdesign/core/VStack";
 import Composer from "./Composer";
 import FeedBoard from "./FeedBoard";
+import GeneratedWorkWorkspace from "./GeneratedWorkWorkspace";
 import ManualArticleWorkspace from "./ManualArticleWorkspace";
 import SourcePicker from "./SourcePicker";
 import { sumWorkspaceTheme } from "@/theme/sum-theme.ts/sum-workspace";
@@ -66,7 +68,7 @@ interface FeedResponse {
   error?: string;
 }
 
-type WorkspaceTab = "feed" | "manual";
+type WorkspaceTab = "feed" | "manual" | "generated";
 
 /** Pure fetch — never touches state, so the effect below stays side-effect free. */
 async function fetchFeed(
@@ -205,12 +207,14 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           settings: prefs.settings,
           includeSourceUrl: prefs.includeSourceUrl,
           extraInstructions,
+          forceRegenerate: Boolean(caption),
         }),
       });
       const data = (await response.json()) as {
         caption?: string;
         draft?: DraftContent;
         model?: string;
+        cached?: boolean;
         error?: string;
       };
       if (!response.ok || !data.caption) {
@@ -224,7 +228,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       setCaption(post.caption);
       setDraft(post.draft);
       setModel(post.model);
-      setFromCache(false);
+      setFromCache(data.cached === true);
       setGenerated((current) => ({ ...current, [selected.id]: post }));
     } catch (error) {
       setGenerateError(
@@ -233,7 +237,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     } finally {
       setGenerating(false);
     }
-  }, [selected, prefs, extraInstructions]);
+  }, [selected, prefs, extraInstructions, caption]);
 
   /** Keep admin edits with the story, so switching away does not lose them. */
   const editCaption = useCallback(
@@ -376,7 +380,9 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   );
 
   const workspaceContent =
-    workspaceTab === "manual" ? (
+    workspaceTab === "generated" ? (
+      <GeneratedWorkWorkspace isDesktop={isDesktop} />
+    ) : workspaceTab === "manual" ? (
       <ManualArticleWorkspace
         isDesktop={isDesktop}
         settings={prefs.settings}
@@ -401,8 +407,13 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         />
         <Tab
           value="manual"
-          label="Manual Article"
+          label={isDesktop ? "Manual Article" : "Manual"}
           icon={<FileText size={16} aria-hidden />}
+        />
+        <Tab
+          value="generated"
+          label={isDesktop ? "Generated Work" : "Generated"}
+          icon={<Archive size={16} aria-hidden />}
         />
       </TabList>
     </Section>

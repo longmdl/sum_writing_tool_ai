@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { buildCaption } from "@/lib/caption";
-import { generateDraft } from "@/lib/openai";
+import {
+  createGeneratedPostCacheKey,
+  findGeneratedPost,
+  storeGeneratedPost,
+} from "@/lib/generated-posts";
+import { DEFAULT_MODEL, generateDraft } from "@/lib/openai";
 import { scrapeLatest } from "@/lib/scraper";
 import { coercePostSettings } from "@/lib/settings";
 import { DEFAULT_SOURCE_IDS, isSourceId } from "@/lib/sources";
@@ -53,11 +58,61 @@ export async function POST(request: Request) {
 
   const settings = coercePostSettings(payload.settings);
   const includeSourceUrl = payload.includeSourceUrl === true;
+  const forceRegenerate = payload.forceRegenerate === true;
+  const cacheKey = createGeneratedPostCacheKey({
+    version: 1,
+    origin: "feed",
+    model: DEFAULT_MODEL,
+    story: {
+      id: item.id,
+      title: item.title,
+      excerpt: item.excerpt,
+      sourceName: item.sourceName,
+      link: item.link,
+      publishedAt: item.publishedAt,
+    },
+    extraInstructions: extraInstructions?.trim() ?? "",
+    settings,
+    includeSourceUrl,
+  });
 
   try {
+    if (!forceRegenerate) {
+      const cached = await findGeneratedPost(cacheKey);
+      if (cached.post) {
+        return NextResponse.json({
+          draft: cached.post.draft,
+          caption: cached.post.caption,
+          item,
+          model: cached.post.model,
+          cached: true,
+          cacheStatus: cached.status,
+        });
+      }
+    }
+
     const { draft, model } = await generateDraft(item, extraInstructions);
     const caption = buildCaption(draft, item, settings, { includeSourceUrl });
-    return NextResponse.json({ draft, caption, item, model });
+    const cacheStatus = await storeGeneratedPost({
+      cacheKey,
+      origin: "feed",
+      storyId: item.id,
+      title: item.title,
+      sourceName: item.sourceName,
+      sourceUrl: item.link,
+      imageUrl: item.imageUrl,
+      caption,
+      draft,
+      model,
+    });
+    return NextResponse.json({
+      draft,
+      caption,
+      item,
+      model,
+      cached: false,
+      cacheStatus,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Generation failed unexpectedly.";
