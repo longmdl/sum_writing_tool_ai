@@ -9,7 +9,9 @@ import {
   ExternalLink,
   RefreshCw,
   Search,
+  Trash2,
 } from "lucide-react";
+import { AlertDialog } from "@astryxdesign/core/AlertDialog";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
@@ -40,6 +42,12 @@ interface GeneratedPostsResponse {
   retentionDays: number;
 }
 
+interface DeleteGeneratedPostResponse {
+  deleted?: boolean;
+  id?: string;
+  error?: string;
+}
+
 interface GeneratedWorkWorkspaceProps {
   isDesktop: boolean;
 }
@@ -50,6 +58,21 @@ async function fetchGeneratedPosts(): Promise<GeneratedPostsResponse> {
   });
   const data = (await response.json()) as GeneratedPostsResponse;
   if (!response.ok) throw new Error("Archive request failed.");
+  return data;
+}
+
+async function deleteGeneratedPost(
+  id: string,
+): Promise<DeleteGeneratedPostResponse> {
+  const response = await fetch("/api/generated-posts", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  const data = (await response.json()) as DeleteGeneratedPostResponse;
+  if (!response.ok || data.deleted !== true) {
+    throw new Error(data.error ?? "Delete request failed.");
+  }
   return data;
 }
 
@@ -97,6 +120,11 @@ export default function GeneratedWorkWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] =
+    useState<GeneratedPostRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   const applyPosts = useCallback(
     (data: GeneratedPostsResponse) => {
@@ -162,6 +190,41 @@ export default function GeneratedWorkWorkspace({
   const selected =
     posts.find((post) => post.id === selectedId) ?? null;
 
+  async function confirmDelete() {
+    if (!deleteTarget || deleting) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteGeneratedPost(deleteTarget.id);
+      const deletedTitle = deleteTarget.title;
+      const deletedIndex = posts.findIndex(
+        (post) => post.id === deleteTarget.id,
+      );
+      const remaining = posts.filter((post) => post.id !== deleteTarget.id);
+
+      setPosts(remaining);
+      setSelectedId(
+        isDesktop
+          ? (remaining[
+              Math.max(0, Math.min(deletedIndex, remaining.length - 1))
+            ]?.id ?? null)
+          : null,
+      );
+      setDeleteTarget(null);
+      setDeleteSuccess(`Đã xoá “${deletedTitle}” khỏi cache.`);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Không thể xoá cached post này.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const archiveList = (
     <VStack height={isDesktop ? "100%" : undefined} gap={0}>
       <Toolbar
@@ -217,6 +280,17 @@ export default function GeneratedWorkWorkspace({
           container="section"
           title="Không load được Generated Work"
           description="Check the Supabase connection and generated_posts migration."
+        />
+      ) : null}
+
+      {deleteSuccess ? (
+        <Banner
+          status="success"
+          container="section"
+          title="Cached post deleted"
+          description={deleteSuccess}
+          isDismissable
+          onDismiss={() => setDeleteSuccess(null)}
         />
       ) : null}
 
@@ -340,7 +414,18 @@ export default function GeneratedWorkWorkspace({
                   Read-only snapshot from the generation time.
                 </Text>
               </VStack>
-              <CopyCaptionButton caption={selected.caption} />
+              <HStack gap={2} wrap="wrap">
+                <CopyCaptionButton caption={selected.caption} />
+                <Button
+                  label="Delete cached post"
+                  variant="destructive"
+                  icon={<Trash2 size={16} aria-hidden />}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(selected);
+                  }}
+                />
+              </HStack>
             </HStack>
             <TextArea
               label="Cached caption"
@@ -366,41 +451,70 @@ export default function GeneratedWorkWorkspace({
     </VStack>
   );
 
+  const deleteDialog = (
+    <AlertDialog
+      isOpen={deleteTarget !== null}
+      onOpenChange={(isOpen) => {
+        if (!isOpen && !deleting) {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }
+      }}
+      title="Delete cached post?"
+      description={
+        deleteError ??
+        `“${deleteTarget?.title ?? "This post"}” will be permanently removed from Generated Work. This cannot be undone.`
+      }
+      actionLabel="Delete cached post"
+      cancelLabel="Cancel"
+      isActionLoading={deleting}
+      onAction={confirmDelete}
+    />
+  );
+
   if (!isDesktop) {
-    return selected ? (
-      <VStack minHeight={640} gap={0}>
-        <Section variant="muted" padding={3} dividers={["bottom"]}>
-          <Button
-            label="Back to Generated Work"
-            variant="ghost"
-            icon={<ArrowLeft size={16} aria-hidden />}
-            onClick={() => setSelectedId(null)}
-          />
-        </Section>
-        {archiveDetail}
-      </VStack>
-    ) : (
-      <VStack minHeight={640}>{archiveList}</VStack>
+    return (
+      <>
+        {selected ? (
+          <VStack minHeight={640} gap={0}>
+            <Section variant="muted" padding={3} dividers={["bottom"]}>
+              <Button
+                label="Back to Generated Work"
+                variant="ghost"
+                icon={<ArrowLeft size={16} aria-hidden />}
+                onClick={() => setSelectedId(null)}
+              />
+            </Section>
+            {archiveDetail}
+          </VStack>
+        ) : (
+          <VStack minHeight={640}>{archiveList}</VStack>
+        )}
+        {deleteDialog}
+      </>
     );
   }
 
   return (
-    <Layout
-      height="fill"
-      start={
-        <LayoutPanel
-          width={440}
-          padding={0}
-          hasDivider
-          label="Cached generated posts"
-        >
-          {archiveList}
-        </LayoutPanel>
-      }
-    >
-      <LayoutContent padding={0} label="Cached post details">
-        {archiveDetail}
-      </LayoutContent>
-    </Layout>
+    <>
+      <Layout
+        height="fill"
+        start={
+          <LayoutPanel
+            width={440}
+            padding={0}
+            hasDivider
+            label="Cached generated posts"
+          >
+            {archiveList}
+          </LayoutPanel>
+        }
+      >
+        <LayoutContent padding={0} label="Cached post details">
+          {archiveDetail}
+        </LayoutContent>
+      </Layout>
+      {deleteDialog}
+    </>
   );
 }

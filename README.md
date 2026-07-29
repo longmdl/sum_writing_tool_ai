@@ -31,7 +31,8 @@ RSS feeds  ─►  scraper  ─►  50-story mixed queue, deduped  ─►  admin
 selecting stories costs zero tokens — it is all RSS. Generated posts are cached
 in Supabase for 30 days, so the same inputs can be reused without another model
 call. The **Generated Work** tab lists every unexpired cached caption. Only the
-explicit **Regenerate** button pays again and replaces that cache entry.
+explicit **Regenerate** button pays again and replaces that cache entry. Admins
+can also permanently delete an individual cached caption from its detail view.
 
 The model writes only **header tag, body, list, hook, topic hashtags**. The
 divider, `Nguồn:` credit, Discord line, core hashtags, and CTA are assembled in
@@ -167,7 +168,7 @@ src/lib/generated-posts.ts  Supabase-backed 30-day caption cache
 src/lib/freshness.ts        age → F1 timing colours
 src/app/api/feed/           GET  the 50-story mixed queue
 src/app/api/generate/       POST a story id → caption
-src/app/api/generated-posts GET cached Generated Work
+src/app/api/generated-posts GET/DELETE cached Generated Work
 src/components/             timing board (dark) + composer (paper)
 ```
 

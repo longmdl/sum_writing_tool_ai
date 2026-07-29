@@ -14,6 +14,12 @@ export type CacheOperationStatus =
   | "unavailable"
   | "error";
 
+export type DeleteGeneratedPostStatus =
+  | "deleted"
+  | "not_found"
+  | "unavailable"
+  | "error";
+
 export interface GeneratedPostRecord {
   id: string;
   cacheKey: string;
@@ -222,4 +228,30 @@ export async function listGeneratedPosts(
     posts: ((data ?? []) as unknown as GeneratedPostRow[]).map(toGeneratedPost),
     status: "hit",
   };
+}
+
+export async function deleteGeneratedPost(
+  id: string,
+): Promise<{
+  deleted: boolean;
+  status: DeleteGeneratedPostStatus;
+}> {
+  const client = getDatabaseClient();
+  if (!client) return { deleted: false, status: "unavailable" };
+
+  const { data, error } = await client
+    .from("generated_posts")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Generated-post cache delete failed:", error.message);
+    return { deleted: false, status: "error" };
+  }
+
+  return data
+    ? { deleted: true, status: "deleted" }
+    : { deleted: false, status: "not_found" };
 }
