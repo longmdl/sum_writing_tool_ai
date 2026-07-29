@@ -23,7 +23,12 @@ import { Token } from "@astryxdesign/core/Token";
 import { Toolbar } from "@astryxdesign/core/Toolbar";
 import { VStack } from "@astryxdesign/core/VStack";
 import { captionStats } from "@/lib/caption";
-import type { DraftContent, PostSettings } from "@/lib/types";
+import type {
+  ArticleInputSource,
+  ArticleLengthGuide,
+  DraftContent,
+  PostSettings,
+} from "@/lib/types";
 
 const MAX_ARTICLE_CHARS = 60_000;
 const MIN_ARTICLE_CHARS = 120;
@@ -39,6 +44,8 @@ interface ManualGenerateResponse {
   caption?: string;
   draft?: DraftContent;
   model?: string;
+  inputSource?: ArticleInputSource;
+  lengthGuide?: ArticleLengthGuide;
   cached?: boolean;
   error?: string;
 }
@@ -52,6 +59,8 @@ interface ManualSessionState {
   caption: string;
   draft: DraftContent | null;
   model: string | null;
+  inputSource: ArticleInputSource | null;
+  lengthGuide: ArticleLengthGuide | null;
   cached: boolean;
 }
 
@@ -64,6 +73,8 @@ let manualSessionState: ManualSessionState = {
   caption: "",
   draft: null,
   model: null,
+  inputSource: null,
+  lengthGuide: null,
   cached: false,
 };
 
@@ -119,6 +130,8 @@ export default function ManualArticleWorkspace({
     caption,
     draft,
     model,
+    inputSource,
+    lengthGuide,
     cached,
   } = session;
 
@@ -138,7 +151,14 @@ export default function ManualArticleWorkspace({
     articleLength <= MAX_ARTICLE_CHARS &&
     !generating;
   const stats = captionStats(caption, draft);
-  const overLimit = stats.bodyWords !== null && stats.bodyWords > 200;
+  const overLimit =
+    stats.bodyWords !== null &&
+    lengthGuide !== null &&
+    stats.bodyWords > lengthGuide.maxBodyWords;
+  const underTarget =
+    stats.bodyWords !== null &&
+    lengthGuide !== null &&
+    stats.bodyWords < lengthGuide.minBodyWords;
 
   async function generate() {
     if (!canGenerate) return;
@@ -168,6 +188,8 @@ export default function ManualArticleWorkspace({
         caption: data.caption,
         draft: data.draft ?? null,
         model: data.model ?? null,
+        inputSource: data.inputSource ?? null,
+        lengthGuide: data.lengthGuide ?? null,
         cached: data.cached === true,
       });
     } catch (generationError) {
@@ -317,6 +339,24 @@ export default function ManualArticleWorkspace({
                   {cached ? (
                     <Token label="30-day cache" size="sm" color="green" />
                   ) : null}
+                  {inputSource ? (
+                    <Token
+                      label="Full article"
+                      size="sm"
+                      color="green"
+                    />
+                  ) : null}
+                  {lengthGuide ? (
+                    <Text
+                      type="supporting"
+                      color="secondary"
+                      hasTabularNumbers
+                    >
+                      {lengthGuide.sourceWords.toLocaleString("vi-VN")} source
+                      words · target {lengthGuide.minBodyWords}–
+                      {lengthGuide.maxBodyWords}
+                    </Text>
+                  ) : null}
                   {model ? <Token label={model} size="sm" color="gray" /> : null}
                   <Text
                     type="supporting"
@@ -338,8 +378,13 @@ export default function ManualArticleWorkspace({
                   overLimit
                     ? {
                         type: "error",
-                        message: "Body vượt giới hạn tối đa 200 từ.",
+                        message: `Body vượt target tối đa ${lengthGuide?.maxBodyWords ?? 0} từ cho article này.`,
                       }
+                    : underTarget
+                      ? {
+                          type: "warning",
+                          message: `Target cho article này là ${lengthGuide?.minBodyWords ?? 0}–${lengthGuide?.maxBodyWords ?? 0} từ.`,
+                        }
                     : undefined
                 }
                 onChange={(value) => updateSession({ caption: value })}

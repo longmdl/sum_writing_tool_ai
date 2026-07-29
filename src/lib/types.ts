@@ -42,7 +42,7 @@ export interface Source {
 export interface NewsItem {
   id: string;
   title: string;
-  /** Publisher's own RSS excerpt. Never the full article body. */
+  /** Publisher's RSS preview, also used when full-article extraction fails. */
   excerpt: string;
   link: string;
   imageUrl: string | null;
@@ -51,6 +51,14 @@ export interface NewsItem {
   sourceName: string;
   author: string | null;
   categories: string[];
+}
+
+export type ArticleInputSource = "full-article" | "rss-excerpt";
+
+export interface ArticleLengthGuide {
+  sourceWords: number;
+  minBodyWords: number;
+  maxBodyWords: number;
 }
 
 /** Topic tags that open a post. Free-form so the guide can add more. */

@@ -1,6 +1,5 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Section } from "@astryxdesign/core/Section";
 import { Text } from "@astryxdesign/core/Text";
@@ -26,7 +25,6 @@ export default function SourcePicker({
         </Text>
         {sources.map((source) => {
           const isEnabled = enabled.includes(source.id);
-          const restricted = source.policy.blocksAiCrawlers;
 
           return (
             <Token
@@ -34,10 +32,7 @@ export default function SourcePicker({
               label={source.shortName ?? source.name}
               size="md"
               color={isEnabled ? "green" : "gray"}
-              icon={
-                restricted ? <AlertTriangle size={14} aria-hidden /> : undefined
-              }
-              description={`${isEnabled ? "Enabled" : "Disabled"}. ${source.policy.note}`}
+              description={isEnabled ? "Enabled" : "Disabled"}
               onClick={() => onToggle(source.id)}
             />
           );

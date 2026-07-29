@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getArticleLengthGuide } from "@/lib/article";
 import { buildCaption } from "@/lib/caption";
 import {
   createGeneratedPostCacheKey,
@@ -89,8 +90,9 @@ export async function POST(request: Request) {
   const includeSourceUrl =
     payload.includeSourceUrl === true && Boolean(article.sourceUrl);
   const forceRegenerate = payload.forceRegenerate === true;
+  const lengthGuide = getArticleLengthGuide(article.body);
   const cacheKey = createGeneratedPostCacheKey({
-    version: 1,
+    version: 2,
     origin: "manual",
     model: DEFAULT_MODEL,
     article,
@@ -109,6 +111,8 @@ export async function POST(request: Request) {
           model: cached.post.model,
           cached: true,
           cacheStatus: cached.status,
+          inputSource: "full-article",
+          lengthGuide,
         });
       }
     }
@@ -139,6 +143,8 @@ export async function POST(request: Request) {
       model,
       cached: false,
       cacheStatus,
+      inputSource: "full-article",
+      lengthGuide,
     });
   } catch (error) {
     const message =

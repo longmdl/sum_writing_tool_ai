@@ -24,7 +24,13 @@ import { Thumbnail } from "@astryxdesign/core/Thumbnail";
 import { Token } from "@astryxdesign/core/Token";
 import { VStack } from "@astryxdesign/core/VStack";
 import { captionStats } from "@/lib/caption";
-import type { DraftContent, NewsItem, PostSettings } from "@/lib/types";
+import type {
+  ArticleInputSource,
+  ArticleLengthGuide,
+  DraftContent,
+  NewsItem,
+  PostSettings,
+} from "@/lib/types";
 
 interface ComposerProps {
   item: NewsItem | null;
@@ -42,6 +48,8 @@ interface ComposerProps {
   error: string | null;
   model: string | null;
   cached: boolean;
+  inputSource: ArticleInputSource | null;
+  lengthGuide: ArticleLengthGuide | null;
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -93,14 +101,20 @@ export default function Composer({
   error,
   model,
   cached,
+  inputSource,
+  lengthGuide,
 }: ComposerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const stats = captionStats(caption, draft);
-  const overLimit = stats.bodyWords !== null && stats.bodyWords > 200;
+  const overLimit =
+    stats.bodyWords !== null &&
+    lengthGuide !== null &&
+    stats.bodyWords > lengthGuide.maxBodyWords;
   const offTarget =
     stats.bodyWords !== null &&
+    lengthGuide !== null &&
     !overLimit &&
-    (stats.bodyWords < 60 || stats.bodyWords > 150);
+    stats.bodyWords < lengthGuide.minBodyWords;
 
   if (!item) {
     return (
@@ -158,9 +172,14 @@ export default function Composer({
         </Section>
 
         <Section variant="transparent" padding={0}>
-          <Text type="body" color="secondary" display="block">
-            {item.excerpt}
-          </Text>
+          <VStack gap={1.5}>
+            <Text type="supporting" color="disabled">
+              RSS preview · Generate sẽ fetch full public article khi đọc được.
+            </Text>
+            <Text type="body" color="secondary" display="block">
+              {item.excerpt}
+            </Text>
+          </VStack>
         </Section>
 
         <Divider />
@@ -188,6 +207,23 @@ export default function Composer({
           </HStack>
           <HStack gap={2} wrap="wrap">
             {cached ? <Token label="Cached draft" size="sm" color="green" /> : null}
+            {inputSource ? (
+              <Token
+                label={
+                  inputSource === "full-article"
+                    ? "Full article"
+                    : "RSS fallback"
+                }
+                size="sm"
+                color={inputSource === "full-article" ? "green" : "yellow"}
+              />
+            ) : null}
+            {lengthGuide ? (
+              <Text type="supporting" color="secondary" hasTabularNumbers>
+                {lengthGuide.sourceWords.toLocaleString("vi-VN")} source words ·
+                target {lengthGuide.minBodyWords}–{lengthGuide.maxBodyWords}
+              </Text>
+            ) : null}
             {model ? <Token label={model} size="sm" color="gray" /> : null}
           </HStack>
         </HStack>
@@ -292,15 +328,15 @@ export default function Composer({
                 hasSpellCheck={false}
                 status={
                   overLimit
-                    ? {
-                        type: "error",
-                        message: "Body vượt giới hạn tối đa 200 từ.",
-                      }
-                    : offTarget
                       ? {
-                          type: "warning",
-                          message: "Mục tiêu đề xuất là 60–150 từ.",
+                          type: "error",
+                          message: `Body vượt target tối đa ${lengthGuide?.maxBodyWords ?? 0} từ cho article này.`,
                         }
+                      : offTarget
+                        ? {
+                            type: "warning",
+                            message: `Target cho article này là ${lengthGuide?.minBodyWords ?? 0}–${lengthGuide?.maxBodyWords ?? 0} từ.`,
+                          }
                       : undefined
                 }
                 onChange={onCaptionChange}

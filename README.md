@@ -17,6 +17,9 @@ RSS feeds  ─►  scraper  ─►  50-story mixed queue, deduped  ─►  admin
                                                                     │
                                                       admin clicks generate
                                                                     │
+                                      public article page  ──────────┤
+                                      (RSS excerpt fallback)         │
+                                                                    │
                                      content/style-guide.md  ──►  OpenAI
                                                                     │
                                               model writes 5 fields │
@@ -52,7 +55,7 @@ Tham gia CLB ngay hôm nay
 
 | Source | Default | Notes |
 | --- | --- | --- |
-| Formula 1 (official) | on | No AI restrictions. Feed has no dates or images, so each article page is read for `og:image` and `datePublished` — nothing else. |
+| Formula 1 (official) | on | Feed has no dates or images, so article metadata is enriched from the public page. Full text is extracted when the admin generates. |
 | Motorsport.com F1 | on | No AI restrictions. Dates and images come straight from the feed. |
 | Traxion.GG | on | `Content-Signal: ai-train=no, use=reference`. Permits reference use; forbids training. |
 | RaceFans | on | Same signal as Traxion. |
@@ -62,10 +65,11 @@ Tham gia CLB ngay hôm nay
 | Motorsport.com IMSA | on | Public IMSA category RSS. |
 | GT World Challenge | on | Official GT World Challenge Europe public RSS. |
 
-The two restricted sources are marked with ▲ in the UI. This tool never trains
-on anything, only ever reads the publisher's own RSS excerpt, and always prints
-`Nguồn:` — which is the "reference" use those publishers permit. Re-check
-`robots.txt` occasionally; publishers change these.
+This tool never trains on publisher content. At generation time it extracts the
+publicly accessible article for reference, falls back to the publisher's RSS
+excerpt when extraction is blocked or unreadable, and always prints `Nguồn:`.
+It never bypasses a paywall or access control. Re-check `robots.txt`
+occasionally; publishers change these.
 
 **Never remove the `Nguồn:` line from a generated caption.**
 
@@ -109,8 +113,9 @@ a daily Supabase Cron job permanently deletes rows only after `expires_at`.
 
 Edit **`content/style-guide.md`**. That file *is* the system prompt — it defines
 the header tags, the voice, the Vietnamese conventions, which proper nouns stay
-in English, the body length target (60–150 words, hard cap 200), the hashtag
-sets, and the JSON contract. There is no prompt text hidden in the code.
+in English, the source-length tiers (70–450 words), the hashtag sets, and the
+JSON contract. There is no hidden house-style prompt in the code; the generation
+request adds only the exact source-length target and article text.
 
 The same file backs the **`sum-post` Claude Code skill**
 (`.claude/skills/sum-post/`), so you can paste any article into Claude Code and
@@ -183,7 +188,8 @@ is Vietnamese and most grotesques set the stacked diacritics badly.
 - Generation is **untested against a live model** — it was built and verified
   without an API key. Caption assembly, both feed sources, and every error path
   are tested. Run one generation after adding your key.
-- The feed is cached for 5 minutes and article pages for 24 hours. Hit **Làm mới**
-  to force a refetch.
+- The feed is cached for 5 minutes and article pages for 24 hours. Full article
+  extraction happens only when an admin generates a caption; browsing the queue
+  remains lightweight.
 - If a publisher changes its feed shape, that source fails alone and the rest keep
   working — a failed source is named in the UI rather than blanking the board.

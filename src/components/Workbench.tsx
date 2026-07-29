@@ -43,6 +43,8 @@ import {
   type Preferences,
 } from "@/lib/preferences";
 import type {
+  ArticleInputSource,
+  ArticleLengthGuide,
   DraftContent,
   NewsItem,
   PostSettings,
@@ -54,6 +56,8 @@ interface GeneratedPost {
   caption: string;
   draft: DraftContent | null;
   model: string | null;
+  inputSource: ArticleInputSource | null;
+  lengthGuide: ArticleLengthGuide | null;
 }
 
 interface WorkbenchProps {
@@ -97,7 +101,6 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   );
 
   const [items, setItems] = useState<NewsItem[]>([]);
-  const [feedErrors, setFeedErrors] = useState<FeedResponse["errors"]>([]);
   const [feedError, setFeedError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
@@ -108,6 +111,10 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const [caption, setCaption] = useState("");
   const [draft, setDraft] = useState<DraftContent | null>(null);
   const [model, setModel] = useState<string | null>(null);
+  const [inputSource, setInputSource] =
+    useState<ArticleInputSource | null>(null);
+  const [lengthGuide, setLengthGuide] =
+    useState<ArticleLengthGuide | null>(null);
   const [extraInstructions, setExtraInstructions] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -132,7 +139,6 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         const data = await fetchFeed(sourceIds, refreshNonce > 0);
         if (cancelled) return;
         setItems(data.items);
-        setFeedErrors(data.errors ?? []);
         setFetchedAt(data.fetchedAt);
         setFeedError(null);
       } catch (error) {
@@ -188,6 +194,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       setCaption(previous?.caption ?? "");
       setDraft(previous?.draft ?? null);
       setModel(previous?.model ?? null);
+      setInputSource(previous?.inputSource ?? null);
+      setLengthGuide(previous?.lengthGuide ?? null);
       setFromCache(Boolean(previous));
     },
     [generated],
@@ -214,6 +222,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         caption?: string;
         draft?: DraftContent;
         model?: string;
+        inputSource?: ArticleInputSource;
+        lengthGuide?: ArticleLengthGuide;
         cached?: boolean;
         error?: string;
       };
@@ -224,10 +234,14 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         caption: data.caption,
         draft: data.draft ?? null,
         model: data.model ?? null,
+        inputSource: data.inputSource ?? null,
+        lengthGuide: data.lengthGuide ?? null,
       };
       setCaption(post.caption);
       setDraft(post.draft);
       setModel(post.model);
+      setInputSource(post.inputSource);
+      setLengthGuide(post.lengthGuide);
       setFromCache(data.cached === true);
       setGenerated((current) => ({ ...current, [selected.id]: post }));
     } catch (error) {
@@ -305,15 +319,6 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         />
       ) : null}
 
-      {feedErrors.length > 0 ? (
-        <Banner
-          status="warning"
-          container="section"
-          title="Một số sources đang gián đoạn"
-          description={feedErrors.map((item) => item.sourceName).join(", ")}
-        />
-      ) : null}
-
       <StackItem size="fill" isScrollable>
         <FeedBoard
           items={items}
@@ -342,6 +347,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       generating={generating}
       error={generateError}
       model={model}
+      inputSource={inputSource}
+      lengthGuide={lengthGuide}
     />
   );
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveArticle } from "@/lib/article";
 import { buildCaption } from "@/lib/caption";
 import {
   createGeneratedPostCacheKey,
@@ -59,8 +60,10 @@ export async function POST(request: Request) {
   const settings = coercePostSettings(payload.settings);
   const includeSourceUrl = payload.includeSourceUrl === true;
   const forceRegenerate = payload.forceRegenerate === true;
+  const article = await resolveArticle(item);
+  const articleFingerprint = createGeneratedPostCacheKey(article.text);
   const cacheKey = createGeneratedPostCacheKey({
-    version: 1,
+    version: 2,
     origin: "feed",
     model: DEFAULT_MODEL,
     story: {
@@ -71,6 +74,9 @@ export async function POST(request: Request) {
       link: item.link,
       publishedAt: item.publishedAt,
     },
+    articleFingerprint,
+    articleSource: article.source,
+    lengthGuide: article.lengthGuide,
     extraInstructions: extraInstructions?.trim() ?? "",
     settings,
     includeSourceUrl,
@@ -87,11 +93,17 @@ export async function POST(request: Request) {
           model: cached.post.model,
           cached: true,
           cacheStatus: cached.status,
+          inputSource: article.source,
+          lengthGuide: article.lengthGuide,
         });
       }
     }
 
-    const { draft, model } = await generateDraft(item, extraInstructions);
+    const { draft, model } = await generateDraft(
+      item,
+      article,
+      extraInstructions,
+    );
     const caption = buildCaption(draft, item, settings, { includeSourceUrl });
     const cacheStatus = await storeGeneratedPost({
       cacheKey,
@@ -112,6 +124,8 @@ export async function POST(request: Request) {
       model,
       cached: false,
       cacheStatus,
+      inputSource: article.source,
+      lengthGuide: article.lengthGuide,
     });
   } catch (error) {
     const message =
