@@ -1,9 +1,9 @@
 "use client";
 
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Section } from "@astryxdesign/core/Section";
 import { Text } from "@astryxdesign/core/Text";
-import { Token } from "@astryxdesign/core/Token";
 import type { Source, SourceId } from "@/lib/types";
 
 interface SourcePickerProps {
@@ -19,21 +19,25 @@ export default function SourcePicker({
 }: SourcePickerProps) {
   return (
     <Section variant="muted" padding={4} dividers={["bottom"]}>
-      <HStack gap={2} wrap="wrap" vAlign="center">
-        <Text type="label" color="secondary">
-          Sources
-        </Text>
+      <HStack gap={3} wrap="wrap" vAlign="center">
+        <HStack gap={1.5} vAlign="center">
+          <Text type="label" color="primary">
+            Sources
+          </Text>
+          <Text type="supporting" color="disabled" hasTabularNumbers>
+            {enabled.length}/{sources.length} active
+          </Text>
+        </HStack>
         {sources.map((source) => {
           const isEnabled = enabled.includes(source.id);
 
           return (
-            <Token
+            <CheckboxInput
               key={source.id}
               label={source.shortName ?? source.name}
-              size="md"
-              color={isEnabled ? "green" : "gray"}
-              description={isEnabled ? "Enabled" : "Disabled"}
-              onClick={() => onToggle(source.id)}
+              size="sm"
+              value={isEnabled}
+              onChange={() => onToggle(source.id)}
             />
           );
         })}
