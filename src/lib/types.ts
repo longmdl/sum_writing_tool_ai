@@ -7,18 +7,25 @@ export type SourceId =
   | "wec"
   | "gt"
   | "imsa"
-  | "gtwc";
+  | "gtwc"
+  | "crash"
+  | "sportscar365"
+  | "dirtfish"
+  | "racer"
+  | "motorsportweek"
+  | "therace"
+  | "fia";
 
 /**
- * What the publisher's robots.txt says about AI use. Surfaced in the UI so an
- * admin enabling a source can see what they are agreeing to.
+ * What the publisher's robots.txt says about AI use. Kept in the registry for
+ * maintenance; the source picker intentionally stays focused on selection.
  */
 export interface SourcePolicy {
   /** Verbatim Content-Signal line, or null if the publisher sets none. */
   contentSignal: string | null;
   /** True when robots.txt Disallows named AI crawlers (GPTBot, ClaudeBot, ...). */
   blocksAiCrawlers: boolean;
-  /** Plain-language summary shown next to the source toggle. */
+  /** Plain-language maintenance note for this source. */
   note: string;
 }
 

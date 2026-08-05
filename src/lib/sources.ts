@@ -4,7 +4,7 @@ import type { Source, SourceId } from "./types";
  * Source registry.
  *
  * `policy` records what each publisher's robots.txt said when this file was
- * written (checked 2026-07-27). Two publishers set
+ * written (checked 2026-08-05). Two publishers set
  * `Content-Signal: ai-train=no, use=reference` and disallow named training
  * crawlers. This tool performs reference use only and always links back.
  *
@@ -61,6 +61,46 @@ export const SOURCES: Source[] = [
       contentSignal: "search=yes, ai-train=no, use=reference",
       blocksAiCrawlers: true,
       note: "Independent F1 coverage. Permits reference use; forbids AI training. Always credited.",
+    },
+  },
+  {
+    id: "crash",
+    name: "Crash.net",
+    feedUrl: "https://www.crash.net/rss/f1",
+    homepage: "https://www.crash.net/f1",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Public F1 RSS feed with publisher attribution.",
+    },
+  },
+  {
+    id: "therace",
+    name: "The Race",
+    feedUrl: "https://www.the-race.com/rss/",
+    homepage: "https://www.the-race.com/",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Independent multi-series motorsport RSS feed.",
+    },
+  },
+  {
+    id: "motorsportweek",
+    name: "Motorsport Week",
+    shortName: "MS Week",
+    feedUrl: "https://www.motorsportweek.com/feed/",
+    homepage: "https://www.motorsportweek.com/",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Multi-series motorsport RSS feed with publisher attribution.",
     },
   },
   {
@@ -131,6 +171,59 @@ export const SOURCES: Source[] = [
       contentSignal: null,
       blocksAiCrawlers: false,
       note: "Official GT World Challenge Europe public RSS feed.",
+    },
+  },
+  {
+    id: "sportscar365",
+    name: "Sportscar365",
+    shortName: "SC365",
+    feedUrl: "https://sportscar365.com/feed/",
+    homepage: "https://sportscar365.com/",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Endurance and GT racing RSS feed with publisher attribution.",
+    },
+  },
+  {
+    id: "dirtfish",
+    name: "DirtFish",
+    feedUrl: "https://dirtfish.com/feed/",
+    homepage: "https://dirtfish.com/",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Rally and WRC RSS feed with publisher attribution.",
+    },
+  },
+  {
+    id: "racer",
+    name: "RACER",
+    feedUrl: "https://racer.com/feed/",
+    homepage: "https://racer.com/",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "US and international motorsport RSS feed with publisher attribution.",
+    },
+  },
+  {
+    id: "fia",
+    name: "FIA",
+    feedUrl: "https://www.fia.com/rss/news",
+    homepage: "https://www.fia.com/news",
+    defaultEnabled: true,
+    needsEnrichment: false,
+    policy: {
+      contentSignal: null,
+      blocksAiCrawlers: false,
+      note: "Official FIA news RSS feed.",
     },
   },
 ];

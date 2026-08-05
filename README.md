@@ -60,11 +60,18 @@ Tham gia CLB ngay hôm nay
 | Motorsport.com F1 | on | No AI restrictions. Dates and images come straight from the feed. |
 | Traxion.GG | on | `Content-Signal: ai-train=no, use=reference`. Permits reference use; forbids training. |
 | RaceFans | on | Same signal as Traxion. |
+| Crash.net | on | Public F1 RSS feed. |
+| The Race | on | Independent multi-series motorsport RSS. |
+| Motorsport Week | on | Multi-series coverage including Formula E, IndyCar, WRC, endurance, and MotoGP. |
 | Motorsport.com MotoGP | on | Public MotoGP category RSS. |
 | Motorsport.com WEC | on | Public World Endurance Championship category RSS. |
 | Motorsport.com GT | on | Public international GT racing category RSS. |
 | Motorsport.com IMSA | on | Public IMSA category RSS. |
 | GT World Challenge | on | Official GT World Challenge Europe public RSS. |
+| Sportscar365 | on | Endurance and GT racing RSS. |
+| DirtFish | on | Rally and WRC RSS. |
+| RACER | on | US and international motorsport RSS. |
+| FIA | on | Official FIA news RSS. |
 
 This tool never trains on publisher content. At generation time it extracts the
 publicly accessible article for reference, falls back to the publisher's RSS
@@ -175,7 +182,8 @@ src/components/             timing board (dark) + composer (paper)
 ### Design
 
 The screen is a dense editorial workspace. The left board ranks the 50 newest
-stories across F1, MotoGP, WEC, GT, IMSA, sim racing, and general motorsport,
+stories across F1, MotoGP, WEC, GT, IMSA, rally, IndyCar, Formula E, sim racing,
+and general motorsport,
 with each story's age shown in F1 timing colours. The right side is the editable
 caption workspace.
 
