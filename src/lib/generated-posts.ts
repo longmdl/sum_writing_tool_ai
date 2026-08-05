@@ -102,7 +102,7 @@ export function createGeneratedPostCacheKey(input: unknown): string {
   return createHash("sha256").update(stableJson(input)).digest("hex");
 }
 
-function getDatabaseClient(): SupabaseClient | null {
+export function getServerDatabaseClient(): SupabaseClient | null {
   const url = process.env.SUPABASE_URL;
   const secretKey =
     process.env.SUPABASE_SECRET_KEY ??
@@ -144,7 +144,7 @@ export async function findGeneratedPost(
   post: GeneratedPostRecord | null;
   status: CacheOperationStatus;
 }> {
-  const client = getDatabaseClient();
+  const client = getServerDatabaseClient();
   if (!client) return { post: null, status: "unavailable" };
 
   const { data, error } = await client
@@ -170,7 +170,7 @@ export async function findGeneratedPost(
 export async function storeGeneratedPost(
   input: GeneratedPostInput,
 ): Promise<CacheOperationStatus> {
-  const client = getDatabaseClient();
+  const client = getServerDatabaseClient();
   if (!client) return "unavailable";
 
   const createdAt = new Date();
@@ -208,7 +208,7 @@ export async function listGeneratedPosts(
   posts: GeneratedPostRecord[];
   status: CacheOperationStatus;
 }> {
-  const client = getDatabaseClient();
+  const client = getServerDatabaseClient();
   if (!client) return { posts: [], status: "unavailable" };
 
   const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 200));
@@ -236,7 +236,7 @@ export async function deleteGeneratedPost(
   deleted: boolean;
   status: DeleteGeneratedPostStatus;
 }> {
-  const client = getDatabaseClient();
+  const client = getServerDatabaseClient();
   if (!client) return { deleted: false, status: "unavailable" };
 
   const { data, error } = await client

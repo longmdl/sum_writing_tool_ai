@@ -33,6 +33,8 @@ in Supabase for 30 days, so the same inputs can be reused without another model
 call. The **Generated Work** tab lists every unexpired cached caption. Only the
 explicit **Regenerate** button pays again and replaces that cache entry. Admins
 can also permanently delete an individual cached caption from its detail view.
+Fresh model calls are limited to 10 per rolling hour per hashed IP address;
+cache hits do not consume that quota.
 
 The model writes only **header tag, body, list, hook, topic hashtags**. The
 divider, `Nguồn:` credit, Discord line, core hashtags, and CTA are assembled in
@@ -101,12 +103,14 @@ Open http://localhost:3000.
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | yes | — | Get one at https://platform.openai.com/api-keys |
 | `OPENAI_MODEL` | no | `gpt-4o` | Any OpenAI model supporting JSON response format |
-| `SUPABASE_URL` | yes for archive | — | Project URL from Supabase project settings |
-| `SUPABASE_SECRET_KEY` | yes for archive | — | Server-only secret key; never expose it as `NEXT_PUBLIC_*` |
+| `SUPABASE_URL` | yes for generation | — | Project URL used by the archive and fresh-generation limiter |
+| `SUPABASE_SECRET_KEY` | yes for generation | — | Server-only secret key; never expose it as `NEXT_PUBLIC_*` |
+| `RATE_LIMIT_HASH_SECRET` | no | Supabase secret key | Server-only HMAC secret; raw IP addresses are never stored |
 
 Without an OpenAI key the feed still loads and browses fine; only generation
-fails. Without Supabase credentials generation still works, but captions cannot
-persist and the Generated Work tab shows a setup notice.
+fails. Without Supabase credentials cached browsing still works, but fresh
+generation fails closed so the OpenAI budget cannot be used without rate-limit
+protection.
 
 ### Generated post retention
 

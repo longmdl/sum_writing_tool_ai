@@ -7,6 +7,10 @@ import {
   storeGeneratedPost,
 } from "@/lib/generated-posts";
 import {
+  consumeFreshGenerationQuota,
+  generationRateLimitHeaders,
+} from "@/lib/generation-rate-limit";
+import {
   DEFAULT_MODEL,
   generateDraftFromManualArticle,
   type ManualArticleInput,
@@ -117,6 +121,23 @@ export async function POST(request: Request) {
       }
     }
 
+    const quota = await consumeFreshGenerationQuota(request);
+    if (quota.status === "unavailable") {
+      return NextResponse.json(
+        { error: "Generation protection is temporarily unavailable. Try again shortly." },
+        { status: 503 },
+      );
+    }
+    if (quota.status === "limited") {
+      return NextResponse.json(
+        {
+          error:
+            "Fresh-generation limit reached: 10 per hour for this IP address. Cached posts remain available.",
+        },
+        { status: 429, headers: generationRateLimitHeaders(quota) },
+      );
+    }
+
     const { draft, model } = await generateDraftFromManualArticle(
       article,
       extraInstructions,
@@ -137,15 +158,18 @@ export async function POST(request: Request) {
       draft,
       model,
     });
-    return NextResponse.json({
-      draft,
-      caption,
-      model,
-      cached: false,
-      cacheStatus,
-      inputSource: "full-article",
-      lengthGuide,
-    });
+    return NextResponse.json(
+      {
+        draft,
+        caption,
+        model,
+        cached: false,
+        cacheStatus,
+        inputSource: "full-article",
+        lengthGuide,
+      },
+      { headers: generationRateLimitHeaders(quota) },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Generation failed unexpectedly.";
