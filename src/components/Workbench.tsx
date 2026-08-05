@@ -439,11 +439,10 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
               <TopNavHeading
                 logo={
                   <Image
-                    src="/sum-logo.png"
+                    src="/sum-editorial-logo.png"
                     alt=""
-                    width={104}
-                    height={52}
-                    sizes="104px"
+                    width={142}
+                    height={36}
                     loading="eager"
                   />
                 }
