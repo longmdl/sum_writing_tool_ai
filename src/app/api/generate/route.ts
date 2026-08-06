@@ -11,7 +11,7 @@ import {
   generationRateLimitHeaders,
 } from "@/lib/generation-rate-limit";
 import { DEFAULT_MODEL, generateDraft } from "@/lib/openai";
-import { scrapeShitposts } from "@/lib/bluesky";
+import { coerceRedditShitpost } from "@/lib/reddit";
 import { scrapeLatest } from "@/lib/scraper";
 import { coercePostSettings } from "@/lib/settings";
 import { DEFAULT_SOURCE_IDS, isSourceId } from "@/lib/sources";
@@ -45,13 +45,23 @@ export async function POST(request: Request) {
     : [];
   const sourceIds = requested.length > 0 ? requested : DEFAULT_SOURCE_IDS;
 
-  // Re-resolve the story from the server-side feed rather than trusting media,
-  // attribution, or body text supplied by the browser.
-  const { items } =
+  // News is re-resolved from its server-side feed. Reddit RSS is aggressively
+  // throttled, so its selected item is instead validated and reconstructed from
+  // strict Reddit URL/identity allowlists without making another upstream call.
+  const submittedShitpost =
+    feedKind === "shitpost" ? coerceRedditShitpost(payload.item) : null;
+  if (feedKind === "shitpost" && !submittedShitpost) {
+    return NextResponse.json(
+      { error: "The selected Reddit RSS item is invalid. Refresh and try again." },
+      { status: 400 },
+    );
+  }
+  const item =
     feedKind === "shitpost"
-      ? await scrapeShitposts(50)
-      : await scrapeLatest(sourceIds, 50);
-  const item = items.find((candidate) => candidate.id === id);
+      ? submittedShitpost
+      : (await scrapeLatest(sourceIds, 50)).items.find(
+          (candidate) => candidate.id === id,
+        );
 
   if (!item) {
     return NextResponse.json(
@@ -133,7 +143,7 @@ export async function POST(request: Request) {
     const cacheStatus = await storeGeneratedPost({
       cacheKey,
       // Keep the existing database enum stable; source attribution distinguishes
-      // Bluesky work in the archive without requiring a production migration.
+      // Reddit work in the archive without requiring a production migration.
       origin: "feed",
       storyId: item.id,
       title: item.title,

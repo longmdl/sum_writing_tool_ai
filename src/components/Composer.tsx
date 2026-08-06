@@ -116,6 +116,9 @@ export default function Composer({
     shitpostItem
       ? `/api/media/download?url=${encodeURIComponent(shitpostItem.mediaUrl)}&filename=${encodeURIComponent(shitpostItem.title)}`
       : null;
+  const downloadLabel = shitpostItem?.isVideoPost
+    ? "Download preview image"
+    : `Download ${mediaType}`;
   const stats = captionStats(caption, draft);
   const overLimit =
     stats.bodyWords !== null &&
@@ -179,7 +182,7 @@ export default function Composer({
                 ) : null}
                 {downloadUrl ? (
                   <Button
-                    label={`Download ${mediaType}`}
+                    label={downloadLabel}
                     variant="secondary"
                     icon={<Download size={16} aria-hidden />}
                     href={downloadUrl}
@@ -194,7 +197,7 @@ export default function Composer({
           <VStack gap={1.5}>
             <Text type="supporting" color="disabled">
               {isShitpost
-                ? "Bluesky post context · Caption sẽ credit original creator."
+                ? "Reddit RSS context · Caption sẽ credit subreddit và original poster."
                 : "RSS preview · Generate sẽ fetch full public article khi đọc được."}
             </Text>
             <Text type="body" color="secondary" display="block">
@@ -234,7 +237,7 @@ export default function Composer({
                   inputSource === "full-article"
                     ? "Full article"
                     : inputSource === "social-post"
-                      ? "Bluesky post"
+                      ? "Reddit post"
                       : "RSS fallback"
                 }
                 size="sm"
@@ -403,7 +406,7 @@ export default function Composer({
             alt: item.title,
             type: mediaType,
             caption: shitpostItem
-              ? `@${shitpostItem.authorHandle} on Bluesky`
+              ? `r/${shitpostItem.subreddit}${shitpostItem.author ? ` · u/${shitpostItem.author}` : ""}`
               : item.sourceName,
           }}
           hasZoom={mediaType === "image"}

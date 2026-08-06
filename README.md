@@ -4,9 +4,9 @@ A caption desk for the SUM Facebook page. It pulls the latest F1 and motorsport
 headlines, drafts each one as a Vietnamese Facebook post in the SUM house style,
 and hands it to an admin to edit and post.
 
-The adjacent **Shitpost Feed** uses Bluesky's public AppView API to rank viral
-automotive image and video posts from a curated set of searches. An admin can preview
-the media, download the original Bluesky-hosted asset, open the original post,
+The adjacent **Shitpost Feed** reads one combined public Reddit Atom/RSS feed
+covering curated automotive and motorsport communities. An admin can preview
+the media, download Reddit-hosted images, open the original post,
 and generate a credited Vietnamese caption through the same cache and quota
 pipeline as editorial news.
 
@@ -112,18 +112,20 @@ Open http://localhost:3000.
 | `SUPABASE_URL` | yes for generation | — | Project URL used by the archive and fresh-generation limiter |
 | `SUPABASE_SECRET_KEY` | yes for generation | — | Server-only secret key; never expose it as `NEXT_PUBLIC_*` |
 | `RATE_LIMIT_HASH_SECRET` | no | Supabase secret key | Server-only HMAC secret; raw IP addresses are never stored |
-| `BLUESKY_MEME_QUERIES` | no | curated automotive searches | Comma-separated public Bluesky search override |
+| `REDDIT_RSS_COMMUNITIES` | no | curated automotive communities | Comma-separated subreddit override for the combined RSS feed |
+| `REDDIT_RSS_USER_AGENT` | no | SUM site identifier | Descriptive user agent for public RSS and media requests |
 
 Without an OpenAI key the feed still loads and browses fine; only generation
 fails. Without Supabase credentials cached browsing still works, but fresh
 generation fails closed so the OpenAI budget cannot be used without rate-limit
 protection.
 
-The Shitpost Feed needs no Bluesky account or secret. It uses the public
-`api.bsky.app` search endpoint, hides labelled adult content, replies, and
-text-only posts, then ranks media posts from the last 60 days. Upstream data is
-refetched only when an admin uses **Refresh Bluesky**; otherwise the server
-reuses its five-minute cache.
+The Shitpost Feed needs no Reddit API key, but it is deliberately best-effort.
+It makes one request to Reddit's public combined RSS feed, keeps only posts with
+Reddit-hosted media, and reuses an hourly server cache. **Refresh Reddit** asks
+for a fresh feed; if Reddit returns `429`, a warm server shows its last good
+result with a warning. RSS exposes video poster images but not a reliable direct
+MP4, so video posts offer a downloadable preview and a link to the original.
 
 ### Generated post retention
 
@@ -186,14 +188,14 @@ content/style-guide.md      the writing rules — edit this, not the code
 src/lib/sources.ts          source registry + each publisher's AI policy
 src/lib/rss.ts              dependency-free RSS reader
 src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
-src/lib/bluesky.ts          public Bluesky viral media feed adapter
+src/lib/reddit.ts           keyless combined Reddit RSS feed adapter
 src/lib/openai.ts           model call + response validation
 src/lib/caption.ts          deterministic footer assembly
 src/lib/generated-posts.ts  Supabase-backed 30-day caption cache
 src/lib/freshness.ts        age → F1 timing colours
 src/app/api/feed/           GET  the 50-story mixed queue
-src/app/api/shitposts/      GET  curated Bluesky image/video queue
-src/app/api/media/download  GET  allowlisted Bluesky media download proxy
+src/app/api/shitposts/      GET  curated Reddit RSS media queue
+src/app/api/media/download  GET  allowlisted Reddit image download proxy
 src/app/api/generate/       POST a story id → caption
 src/app/api/generated-posts GET/DELETE cached Generated Work
 src/components/             timing board (dark) + composer (paper)

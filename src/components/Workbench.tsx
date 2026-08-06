@@ -99,8 +99,9 @@ async function fetchFeed(
 
 interface ShitpostFeedResponse {
   items: ShitpostItem[];
-  queries: string[];
+  communities: string[];
   fetchedAt: string;
+  warning?: string;
   error?: string;
 }
 
@@ -134,7 +135,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const [shitpostLoading, setShitpostLoading] = useState(false);
   const [shitpostLoaded, setShitpostLoaded] = useState(false);
   const [shitpostFetchedAt, setShitpostFetchedAt] = useState<string | null>(null);
-  const [memeQueries, setMemeQueries] = useState<string[]>([]);
+  const [redditCommunities, setRedditCommunities] = useState<string[]>([]);
+  const [shitpostWarning, setShitpostWarning] = useState<string | null>(null);
 
   const [selected, setSelected] = useState<FeedItem | null>(null);
   const [caption, setCaption] = useState("");
@@ -189,11 +191,13 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     try {
       const data = await fetchShitpostFeed(forceFresh);
       setShitpostItems(data.items);
-      setMemeQueries(data.queries);
+      setRedditCommunities(data.communities);
+      setShitpostWarning(data.warning ?? null);
       setShitpostFetchedAt(data.fetchedAt);
       setShitpostError(null);
       setShitpostLoaded(true);
     } catch (error) {
+      setShitpostWarning(null);
       setShitpostError(
         error instanceof Error ? error.message : "Không load được Shitpost Feed.",
       );
@@ -211,13 +215,15 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       .then((data) => {
         if (cancelled) return;
         setShitpostItems(data.items);
-        setMemeQueries(data.queries);
+        setRedditCommunities(data.communities);
+        setShitpostWarning(data.warning ?? null);
         setShitpostFetchedAt(data.fetchedAt);
         setShitpostError(null);
         setShitpostLoaded(true);
       })
       .catch((error: unknown) => {
         if (cancelled) return;
+        setShitpostWarning(null);
         setShitpostError(
           error instanceof Error
             ? error.message
@@ -300,6 +306,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           extraInstructions,
           forceRegenerate: Boolean(caption),
           feedKind: isShitpostItem(selected) ? "shitpost" : "news",
+          item: isShitpostItem(selected) ? selected : undefined,
         }),
       });
       const data = (await response.json()) as {
@@ -455,15 +462,17 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           <VStack gap={0.5}>
             <Heading level={1}>Shitpost Feed</Heading>
             <Text type="supporting" color="secondary">
-              Viral automotive posts on Bluesky
-              {memeQueries.length ? ` · ${memeQueries.length} searches` : ""}
+              Best-effort Reddit RSS
+              {redditCommunities.length
+                ? ` · ${redditCommunities.length} communities`
+                : ""}
               {shitpostUpdatedLabel ? ` · updated ${shitpostUpdatedLabel}` : ""}
             </Text>
           </VStack>
         }
         endContent={
           <Button
-            label="Refresh Bluesky"
+            label="Refresh Reddit"
             variant="ghost"
             icon={<RefreshCw size={16} aria-hidden />}
             isIconOnly={!isDesktop}
@@ -483,9 +492,18 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         />
       ) : null}
 
+      {shitpostWarning ? (
+        <Banner
+          status="warning"
+          container="section"
+          title="Reddit refresh bị throttle"
+          description={shitpostWarning}
+        />
+      ) : null}
+
       <Section variant="muted" padding={4} dividers={["bottom"]}>
         <Text type="supporting" color="secondary">
-          Top media posts from the last 60 days · Download for editorial use and credit the original creator.
+          Top media posts this month · Public RSS, hourly cache · Reddit may throttle manual refreshes.
         </Text>
       </Section>
 

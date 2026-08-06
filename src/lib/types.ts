@@ -69,18 +69,16 @@ export interface ShitpostItem {
   /** Poster image used in lists, including the preview frame for a video. */
   imageUrl: string | null;
   publishedAt: string | null;
-  sourceId: "bluesky";
+  sourceId: "reddit";
   sourceName: string;
   author: string | null;
   categories: string[];
   contentKind: "shitpost";
-  authorHandle: string;
-  likeCount: number;
-  repostCount: number;
-  score: number;
-  commentCount: number;
-  mediaType: "image" | "video";
-  /** Original Bluesky-hosted asset used for preview and user-initiated download. */
+  subreddit: string;
+  /** RSS exposes a preview image, but not a directly downloadable MP4. */
+  isVideoPost: boolean;
+  mediaType: "image";
+  /** Reddit-hosted image or video poster used for user-initiated download. */
   mediaUrl: string;
 }
 

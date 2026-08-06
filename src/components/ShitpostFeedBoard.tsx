@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, MessageCircle, Play, Repeat2 } from "lucide-react";
+import { Play, UserRound } from "lucide-react";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { HStack } from "@astryxdesign/core/HStack";
 import { List, ListItem } from "@astryxdesign/core/List";
@@ -15,13 +15,6 @@ interface ShitpostFeedBoardProps {
   selectedId: string | null;
   onSelect: (item: ShitpostItem) => void;
   loading: boolean;
-}
-
-function compactNumber(value: number): string {
-  return new Intl.NumberFormat("en", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
 }
 
 function SkeletonRow({ index }: { index: number }) {
@@ -61,13 +54,13 @@ export default function ShitpostFeedBoard({
       <EmptyState
         isCompact
         title="Shitpost Feed đang trống"
-        description="Thử Refresh hoặc mở rộng Bluesky search terms."
+        description="Reddit RSS có thể đang rate-limit. Đợi khoảng một phút rồi Refresh."
       />
     );
   }
 
   return (
-    <List density="spacious" hasDividers aria-label="Viral automotive Bluesky posts">
+    <List density="spacious" hasDividers aria-label="Viral automotive Reddit posts">
       {items.map((item, index) => (
         <ListItem
           key={item.id}
@@ -86,35 +79,30 @@ export default function ShitpostFeedBoard({
           description={
             <HStack gap={2} vAlign="center" wrap="wrap">
               <Text type="supporting" color="secondary">
-                @{item.authorHandle}
+                r/{item.subreddit}
               </Text>
-              <HStack gap={0.5} vAlign="center">
-                <Heart size={14} aria-hidden />
-                <Text type="supporting" color="secondary" hasTabularNumbers>
-                  {compactNumber(item.likeCount)}
-                </Text>
-              </HStack>
-              <HStack gap={0.5} vAlign="center">
-                <Repeat2 size={14} aria-hidden />
-                <Text type="supporting" color="secondary" hasTabularNumbers>
-                  {compactNumber(item.repostCount)}
-                </Text>
-              </HStack>
-              <HStack gap={0.5} vAlign="center">
-                <MessageCircle size={14} aria-hidden />
-                <Text type="supporting" color="secondary" hasTabularNumbers>
-                  {compactNumber(item.commentCount)}
-                </Text>
-              </HStack>
-              {item.mediaType === "video" ? (
-                <Token label="Video" size="sm" color="blue" icon={<Play size={12} />} />
+              {item.author ? (
+                <HStack gap={0.5} vAlign="center">
+                  <UserRound size={14} aria-hidden />
+                  <Text type="supporting" color="secondary">
+                    u/{item.author}
+                  </Text>
+                </HStack>
+              ) : null}
+              {item.isVideoPost ? (
+                <Token
+                  label="Video preview"
+                  size="sm"
+                  color="blue"
+                  icon={<Play size={12} aria-hidden />}
+                />
               ) : null}
             </HStack>
           }
           endContent={
             <Thumbnail
               src={item.imageUrl ?? undefined}
-              alt={item.imageUrl ? `Bluesky post preview: ${item.title}` : undefined}
+              alt={item.imageUrl ? `Reddit post preview: ${item.title}` : undefined}
               label={item.title}
             />
           }

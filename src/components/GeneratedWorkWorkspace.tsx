@@ -373,7 +373,7 @@ export default function GeneratedWorkWorkspace({
                 label={
                   selected.origin === "manual"
                     ? "Manual Article"
-                    : selected.sourceName.startsWith("Bluesky ·")
+                    : selected.sourceName.startsWith("Reddit ·")
                       ? "Shitpost Feed"
                       : "News Feed"
                 }

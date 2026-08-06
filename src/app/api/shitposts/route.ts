@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { scrapeShitposts } from "@/lib/bluesky";
+import { scrapeShitposts } from "@/lib/reddit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
         error:
           error instanceof Error
             ? error.message
-            : "Could not load the Bluesky feed.",
+            : "Could not load the Reddit RSS feed.",
       },
       { status: 502 },
     );
