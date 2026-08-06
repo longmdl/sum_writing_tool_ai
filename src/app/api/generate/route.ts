@@ -11,6 +11,7 @@ import {
   generationRateLimitHeaders,
 } from "@/lib/generation-rate-limit";
 import { DEFAULT_MODEL, generateDraft } from "@/lib/openai";
+import { scrapeShitposts } from "@/lib/bluesky";
 import { scrapeLatest } from "@/lib/scraper";
 import { coercePostSettings } from "@/lib/settings";
 import { DEFAULT_SOURCE_IDS, isSourceId } from "@/lib/sources";
@@ -38,15 +39,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const feedKind = payload.feedKind === "shitpost" ? "shitpost" : "news";
   const requested = Array.isArray(payload.sources)
     ? payload.sources.filter((s): s is string => typeof s === "string").filter(isSourceId)
     : [];
   const sourceIds = requested.length > 0 ? requested : DEFAULT_SOURCE_IDS;
 
-  // Re-resolve the story from the (cached) feed rather than trusting the client.
-  // This keeps the endpoint from being used to summarise arbitrary text, and
-  // guarantees the attribution matches a source the admin actually enabled.
-  const { items } = await scrapeLatest(sourceIds, 50);
+  // Re-resolve the story from the server-side feed rather than trusting media,
+  // attribution, or body text supplied by the browser.
+  const { items } =
+    feedKind === "shitpost"
+      ? await scrapeShitposts(50)
+      : await scrapeLatest(sourceIds, 50);
   const item = items.find((candidate) => candidate.id === id);
 
   if (!item) {
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
   const articleFingerprint = createGeneratedPostCacheKey(article.text);
   const cacheKey = createGeneratedPostCacheKey({
     version: 2,
-    origin: "feed",
+    origin: feedKind === "shitpost" ? "shitpost" : "feed",
     model: DEFAULT_MODEL,
     story: {
       id: item.id,
@@ -128,6 +132,8 @@ export async function POST(request: Request) {
     const caption = buildCaption(draft, item, settings, { includeSourceUrl });
     const cacheStatus = await storeGeneratedPost({
       cacheKey,
+      // Keep the existing database enum stable; source attribution distinguishes
+      // Bluesky work in the archive without requiring a production migration.
       origin: "feed",
       storyId: item.id,
       title: item.title,

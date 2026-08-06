@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Archive,
   FileText,
+  Flame,
   Newspaper,
   RefreshCw,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import Composer from "./Composer";
 import FeedBoard from "./FeedBoard";
 import GeneratedWorkWorkspace from "./GeneratedWorkWorkspace";
 import ManualArticleWorkspace from "./ManualArticleWorkspace";
+import ShitpostFeedBoard from "./ShitpostFeedBoard";
 import SourcePicker from "./SourcePicker";
 import { sumWorkspaceTheme } from "@/theme/sum-theme.ts/sum-workspace";
 import {
@@ -46,11 +48,14 @@ import type {
   ArticleInputSource,
   ArticleLengthGuide,
   DraftContent,
+  FeedItem,
   NewsItem,
   PostSettings,
   Source,
   SourceId,
+  ShitpostItem,
 } from "@/lib/types";
+import { isShitpostItem } from "@/lib/types";
 
 interface GeneratedPost {
   caption: string;
@@ -72,7 +77,7 @@ interface FeedResponse {
   error?: string;
 }
 
-type WorkspaceTab = "feed" | "manual" | "generated";
+type WorkspaceTab = "feed" | "shitpost" | "manual" | "generated";
 
 /** Pure fetch — never touches state, so the effect below stays side-effect free. */
 async function fetchFeed(
@@ -92,6 +97,23 @@ async function fetchFeed(
   return data;
 }
 
+interface ShitpostFeedResponse {
+  items: ShitpostItem[];
+  queries: string[];
+  fetchedAt: string;
+  error?: string;
+}
+
+async function fetchShitpostFeed(forceFresh: boolean): Promise<ShitpostFeedResponse> {
+  const refreshParam = forceFresh ? "?limit=50&refresh=1" : "?limit=50";
+  const response = await fetch(`/api/shitposts${refreshParam}`, {
+    cache: "no-store",
+  });
+  const data = (await response.json()) as ShitpostFeedResponse;
+  if (!response.ok) throw new Error(data.error ?? "Không load được Shitpost Feed.");
+  return data;
+}
+
 export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const prefs = useSyncExternalStore(
@@ -107,7 +129,14 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("feed");
 
-  const [selected, setSelected] = useState<NewsItem | null>(null);
+  const [shitpostItems, setShitpostItems] = useState<ShitpostItem[]>([]);
+  const [shitpostError, setShitpostError] = useState<string | null>(null);
+  const [shitpostLoading, setShitpostLoading] = useState(false);
+  const [shitpostLoaded, setShitpostLoaded] = useState(false);
+  const [shitpostFetchedAt, setShitpostFetchedAt] = useState<string | null>(null);
+  const [memeQueries, setMemeQueries] = useState<string[]>([]);
+
+  const [selected, setSelected] = useState<FeedItem | null>(null);
   const [caption, setCaption] = useState("");
   const [draft, setDraft] = useState<DraftContent | null>(null);
   const [model, setModel] = useState<string | null>(null);
@@ -156,6 +185,55 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     };
   }, [sourcesKey, refreshNonce]);
 
+  const loadShitposts = useCallback(async (forceFresh: boolean) => {
+    try {
+      const data = await fetchShitpostFeed(forceFresh);
+      setShitpostItems(data.items);
+      setMemeQueries(data.queries);
+      setShitpostFetchedAt(data.fetchedAt);
+      setShitpostError(null);
+      setShitpostLoaded(true);
+    } catch (error) {
+      setShitpostError(
+        error instanceof Error ? error.message : "Không load được Shitpost Feed.",
+      );
+      setShitpostLoaded(true);
+    } finally {
+      setShitpostLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (workspaceTab !== "shitpost" || shitpostLoaded) return;
+    let cancelled = false;
+
+    void fetchShitpostFeed(false)
+      .then((data) => {
+        if (cancelled) return;
+        setShitpostItems(data.items);
+        setMemeQueries(data.queries);
+        setShitpostFetchedAt(data.fetchedAt);
+        setShitpostError(null);
+        setShitpostLoaded(true);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setShitpostError(
+          error instanceof Error
+            ? error.message
+            : "Không load được Shitpost Feed.",
+        );
+        setShitpostLoaded(true);
+      })
+      .finally(() => {
+        if (!cancelled) setShitpostLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shitpostLoaded, workspaceTab]);
+
   const savePrefs = useCallback((next: Preferences) => updatePreferences(next), []);
 
   const toggleSource = useCallback(
@@ -174,6 +252,11 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     setRefreshNonce((n) => n + 1);
   }, []);
 
+  const refreshShitposts = useCallback(() => {
+    setShitpostLoading(true);
+    void loadShitposts(true);
+  }, [loadShitposts]);
+
   const setSettings = useCallback(
     (settings: PostSettings) => savePrefs({ ...prefs, settings }),
     [prefs, savePrefs],
@@ -185,7 +268,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   );
 
   const selectItem = useCallback(
-    (item: NewsItem) => {
+    (item: FeedItem) => {
       setSelected(item);
       setGenerateError(null);
 
@@ -216,6 +299,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
           includeSourceUrl: prefs.includeSourceUrl,
           extraInstructions,
           forceRegenerate: Boolean(caption),
+          feedKind: isShitpostItem(selected) ? "shitpost" : "news",
         }),
       });
       const data = (await response.json()) as {
@@ -274,6 +358,14 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
       minute: "2-digit",
     });
   }, [fetchedAt]);
+
+  const shitpostUpdatedLabel = useMemo(() => {
+    if (!shitpostFetchedAt) return null;
+    return new Date(shitpostFetchedAt).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [shitpostFetchedAt]);
 
   const feedContent = (
     <VStack height="100%" gap={0}>
@@ -352,6 +444,62 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     />
   );
 
+  const shitpostContent = (
+    <VStack height="100%" gap={0}>
+      <Toolbar
+        label="Shitpost Feed controls"
+        size="lg"
+        gap={3}
+        variant="section"
+        startContent={
+          <VStack gap={0.5}>
+            <Heading level={1}>Shitpost Feed</Heading>
+            <Text type="supporting" color="secondary">
+              Viral automotive posts on Bluesky
+              {memeQueries.length ? ` · ${memeQueries.length} searches` : ""}
+              {shitpostUpdatedLabel ? ` · updated ${shitpostUpdatedLabel}` : ""}
+            </Text>
+          </VStack>
+        }
+        endContent={
+          <Button
+            label="Refresh Bluesky"
+            variant="ghost"
+            icon={<RefreshCw size={16} aria-hidden />}
+            isIconOnly={!isDesktop}
+            isLoading={shitpostLoading}
+            isDisabled={shitpostLoading}
+            onClick={refreshShitposts}
+          />
+        }
+      />
+
+      {shitpostError ? (
+        <Banner
+          status="error"
+          container="section"
+          title="Không load được Shitpost Feed"
+          description={shitpostError}
+        />
+      ) : null}
+
+      <Section variant="muted" padding={4} dividers={["bottom"]}>
+        <Text type="supporting" color="secondary">
+          Top media posts from the last 60 days · Download for editorial use and credit the original creator.
+        </Text>
+      </Section>
+
+      <StackItem size="fill" isScrollable>
+        <ShitpostFeedBoard
+          items={shitpostItems}
+          selectedId={selected && isShitpostItem(selected) ? selected.id : null}
+          onSelect={selectItem}
+          loading={shitpostLoading}
+        />
+      </StackItem>
+    </VStack>
+  );
+
   const feedWorkspace = isDesktop ? (
     <Layout
       height="fill"
@@ -386,6 +534,40 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     <VStack minHeight={640}>{feedContent}</VStack>
   );
 
+  const shitpostWorkspace = isDesktop ? (
+    <Layout
+      height="fill"
+      start={
+        <LayoutPanel
+          width={440}
+          padding={0}
+          hasDivider
+          label="Shitpost Feed"
+        >
+          {shitpostContent}
+        </LayoutPanel>
+      }
+    >
+      <LayoutContent padding={0} label="Shitpost caption workspace">
+        {composer}
+      </LayoutContent>
+    </Layout>
+  ) : selected && isShitpostItem(selected) ? (
+    <VStack gap={0}>
+      <Section variant="muted" padding={3} dividers={["bottom"]}>
+        <Button
+          label="Back to Shitpost Feed"
+          variant="ghost"
+          icon={<ArrowLeft size={16} aria-hidden />}
+          onClick={() => setSelected(null)}
+        />
+      </Section>
+      {composer}
+    </VStack>
+  ) : (
+    <VStack minHeight={640}>{shitpostContent}</VStack>
+  );
+
   const workspaceContent =
     workspaceTab === "generated" ? (
       <GeneratedWorkWorkspace isDesktop={isDesktop} />
@@ -396,6 +578,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         includeSourceUrl={prefs.includeSourceUrl}
         onIncludeSourceUrlChange={setIncludeSourceUrl}
       />
+    ) : workspaceTab === "shitpost" ? (
+      shitpostWorkspace
     ) : (
       feedWorkspace
     );
@@ -404,13 +588,30 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
     <Section variant="section" padding={2} dividers={["bottom"]}>
       <TabList
         value={workspaceTab}
-        onChange={(value) => setWorkspaceTab(value as WorkspaceTab)}
+        onChange={(value) => {
+          const next = value as WorkspaceTab;
+          if (
+            (next === "feed" && selected && isShitpostItem(selected)) ||
+            (next === "shitpost" && selected && !isShitpostItem(selected))
+          ) {
+            setSelected(null);
+          }
+          if (next === "shitpost" && !shitpostLoaded) {
+            setShitpostLoading(true);
+          }
+          setWorkspaceTab(next);
+        }}
         layout={isDesktop ? "hug" : "fill"}
       >
         <Tab
           value="feed"
           label="News Feed"
           icon={<Newspaper size={16} aria-hidden />}
+        />
+        <Tab
+          value="shitpost"
+          label={isDesktop ? "Shitpost Feed" : "Shitposts"}
+          icon={<Flame size={16} aria-hidden />}
         />
         <Tab
           value="manual"

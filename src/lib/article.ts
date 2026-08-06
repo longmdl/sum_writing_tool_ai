@@ -3,8 +3,9 @@ import { DOMParser } from "linkedom";
 import type {
   ArticleInputSource,
   ArticleLengthGuide,
-  NewsItem,
+  FeedItem,
 } from "./types";
+import { isShitpostItem } from "./types";
 
 const USER_AGENT =
   "SUMWritingTool/1.0 (+Facebook editorial assistant; summarises and links back to source)";
@@ -122,7 +123,18 @@ async function fetchArticlePage(url: string): Promise<string> {
   return response.text();
 }
 
-export async function resolveArticle(item: NewsItem): Promise<ResolvedArticle> {
+export async function resolveArticle(item: FeedItem): Promise<ResolvedArticle> {
+  if (isShitpostItem(item)) {
+    const text = normaliseText(
+      [item.title, item.excerpt].filter(Boolean).join("\n\n"),
+    );
+    return {
+      text,
+      source: "social-post",
+      lengthGuide: getArticleLengthGuide(text),
+    };
+  }
+
   try {
     const text = extractArticleText(await fetchArticlePage(item.link));
     if (text) {

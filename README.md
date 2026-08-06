@@ -4,6 +4,12 @@ A caption desk for the SUM Facebook page. It pulls the latest F1 and motorsport
 headlines, drafts each one as a Vietnamese Facebook post in the SUM house style,
 and hands it to an admin to edit and post.
 
+The adjacent **Shitpost Feed** uses Bluesky's public AppView API to rank viral
+automotive image and video posts from a curated set of searches. An admin can preview
+the media, download the original Bluesky-hosted asset, open the original post,
+and generate a credited Vietnamese caption through the same cache and quota
+pipeline as editorial news.
+
 The point is speed: an admin picks a story off the board, hits generate, tweaks a
 line or two, copies the caption, grabs the image, and posts.
 
@@ -106,11 +112,18 @@ Open http://localhost:3000.
 | `SUPABASE_URL` | yes for generation | — | Project URL used by the archive and fresh-generation limiter |
 | `SUPABASE_SECRET_KEY` | yes for generation | — | Server-only secret key; never expose it as `NEXT_PUBLIC_*` |
 | `RATE_LIMIT_HASH_SECRET` | no | Supabase secret key | Server-only HMAC secret; raw IP addresses are never stored |
+| `BLUESKY_MEME_QUERIES` | no | curated automotive searches | Comma-separated public Bluesky search override |
 
 Without an OpenAI key the feed still loads and browses fine; only generation
 fails. Without Supabase credentials cached browsing still works, but fresh
 generation fails closed so the OpenAI budget cannot be used without rate-limit
 protection.
+
+The Shitpost Feed needs no Bluesky account or secret. It uses the public
+`api.bsky.app` search endpoint, hides labelled adult content, replies, and
+text-only posts, then ranks media posts from the last 60 days. Upstream data is
+refetched only when an admin uses **Refresh Bluesky**; otherwise the server
+reuses its five-minute cache.
 
 ### Generated post retention
 
@@ -173,11 +186,14 @@ content/style-guide.md      the writing rules — edit this, not the code
 src/lib/sources.ts          source registry + each publisher's AI policy
 src/lib/rss.ts              dependency-free RSS reader
 src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
+src/lib/bluesky.ts          public Bluesky viral media feed adapter
 src/lib/openai.ts           model call + response validation
 src/lib/caption.ts          deterministic footer assembly
 src/lib/generated-posts.ts  Supabase-backed 30-day caption cache
 src/lib/freshness.ts        age → F1 timing colours
 src/app/api/feed/           GET  the 50-story mixed queue
+src/app/api/shitposts/      GET  curated Bluesky image/video queue
+src/app/api/media/download  GET  allowlisted Bluesky media download proxy
 src/app/api/generate/       POST a story id → caption
 src/app/api/generated-posts GET/DELETE cached Generated Work
 src/components/             timing board (dark) + composer (paper)

@@ -16,6 +16,7 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
+import { Lightbox } from "@astryxdesign/core/Lightbox";
 import { Section } from "@astryxdesign/core/Section";
 import { Text } from "@astryxdesign/core/Text";
 import { TextArea } from "@astryxdesign/core/TextArea";
@@ -28,12 +29,13 @@ import type {
   ArticleInputSource,
   ArticleLengthGuide,
   DraftContent,
-  NewsItem,
+  FeedItem,
   PostSettings,
 } from "@/lib/types";
+import { isShitpostItem } from "@/lib/types";
 
 interface ComposerProps {
-  item: NewsItem | null;
+  item: FeedItem | null;
   caption: string;
   draft: DraftContent | null;
   onCaptionChange: (value: string) => void;
@@ -105,6 +107,15 @@ export default function Composer({
   lengthGuide,
 }: ComposerProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [isMediaOpen, setIsMediaOpen] = useState(false);
+  const shitpostItem = item && isShitpostItem(item) ? item : null;
+  const isShitpost = Boolean(shitpostItem);
+  const mediaUrl = shitpostItem?.mediaUrl ?? item?.imageUrl ?? null;
+  const mediaType = shitpostItem?.mediaType ?? "image";
+  const downloadUrl =
+    shitpostItem
+      ? `/api/media/download?url=${encodeURIComponent(shitpostItem.mediaUrl)}&filename=${encodeURIComponent(shitpostItem.title)}`
+      : null;
   const stats = captionStats(caption, draft);
   const overLimit =
     stats.bodyWords !== null &&
@@ -122,7 +133,7 @@ export default function Composer({
         <EmptyState
           headingLevel={2}
           title="Chọn một story để bắt đầu"
-          description="Mở một story trong News Feed. AI chỉ chạy khi bạn chủ động bấm Generate caption."
+          description="Mở một story trong News Feed hoặc Shitpost Feed. AI chỉ chạy khi bạn chủ động bấm Generate caption."
           icon={<Sparkles size={32} />}
         />
       </VStack>
@@ -136,11 +147,11 @@ export default function Composer({
           <HStack gap={5} vAlign="start">
             <Thumbnail
               src={item.imageUrl ?? undefined}
-              alt={item.imageUrl ? `Ảnh minh hoạ: ${item.title}` : undefined}
+              alt={item.imageUrl ? `Media preview: ${item.title}` : undefined}
               label={item.title}
               onClick={
-                item.imageUrl
-                  ? () => window.open(item.imageUrl ?? "", "_blank", "noopener,noreferrer")
+                mediaUrl
+                  ? () => setIsMediaOpen(true)
                   : undefined
               }
             />
@@ -163,8 +174,16 @@ export default function Composer({
                   target="_blank"
                   rel="noopener noreferrer"
                 />
-                {item.imageUrl ? (
-                  <CopyButton value={item.imageUrl} label="Copy image link" />
+                {mediaUrl ? (
+                  <CopyButton value={mediaUrl} label="Copy media link" />
+                ) : null}
+                {downloadUrl ? (
+                  <Button
+                    label={`Download ${mediaType}`}
+                    variant="secondary"
+                    icon={<Download size={16} aria-hidden />}
+                    href={downloadUrl}
+                  />
                 ) : null}
               </HStack>
             </VStack>
@@ -174,7 +193,9 @@ export default function Composer({
         <Section variant="transparent" padding={0}>
           <VStack gap={1.5}>
             <Text type="supporting" color="disabled">
-              RSS preview · Generate sẽ fetch full public article khi đọc được.
+              {isShitpost
+                ? "Bluesky post context · Caption sẽ credit original creator."
+                : "RSS preview · Generate sẽ fetch full public article khi đọc được."}
             </Text>
             <Text type="body" color="secondary" display="block">
               {item.excerpt}
@@ -212,10 +233,18 @@ export default function Composer({
                 label={
                   inputSource === "full-article"
                     ? "Full article"
-                    : "RSS fallback"
+                    : inputSource === "social-post"
+                      ? "Bluesky post"
+                      : "RSS fallback"
                 }
                 size="sm"
-                color={inputSource === "full-article" ? "green" : "yellow"}
+                color={
+                  inputSource === "full-article"
+                    ? "green"
+                    : inputSource === "social-post"
+                      ? "blue"
+                      : "yellow"
+                }
               />
             ) : null}
             {lengthGuide ? (
@@ -343,7 +372,14 @@ export default function Composer({
               />
               <HStack gap={3} wrap="wrap">
                 <CopyButton value={caption} label="Copy caption" />
-                {item.imageUrl ? (
+                {downloadUrl ? (
+                  <Button
+                    label={`Download ${mediaType}`}
+                    variant="secondary"
+                    icon={<Download size={16} aria-hidden />}
+                    href={downloadUrl}
+                  />
+                ) : item.imageUrl ? (
                   <Button
                     label="Open image to download"
                     variant="secondary"
@@ -358,6 +394,21 @@ export default function Composer({
           </Section>
         ) : null}
       </VStack>
+      {mediaUrl ? (
+        <Lightbox
+          isOpen={isMediaOpen}
+          onOpenChange={setIsMediaOpen}
+          media={{
+            src: mediaUrl,
+            alt: item.title,
+            type: mediaType,
+            caption: shitpostItem
+              ? `@${shitpostItem.authorHandle} on Bluesky`
+              : item.sourceName,
+          }}
+          hasZoom={mediaType === "image"}
+        />
+      ) : null}
     </VStack>
   );
 }

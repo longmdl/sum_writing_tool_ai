@@ -60,7 +60,40 @@ export interface NewsItem {
   categories: string[];
 }
 
-export type ArticleInputSource = "full-article" | "rss-excerpt";
+export interface ShitpostItem {
+  id: string;
+  title: string;
+  /** Social post text and image alt text used as generation context. */
+  excerpt: string;
+  link: string;
+  /** Poster image used in lists, including the preview frame for a video. */
+  imageUrl: string | null;
+  publishedAt: string | null;
+  sourceId: "bluesky";
+  sourceName: string;
+  author: string | null;
+  categories: string[];
+  contentKind: "shitpost";
+  authorHandle: string;
+  likeCount: number;
+  repostCount: number;
+  score: number;
+  commentCount: number;
+  mediaType: "image" | "video";
+  /** Original Bluesky-hosted asset used for preview and user-initiated download. */
+  mediaUrl: string;
+}
+
+export type FeedItem = NewsItem | ShitpostItem;
+
+export function isShitpostItem(item: FeedItem): item is ShitpostItem {
+  return "contentKind" in item && item.contentKind === "shitpost";
+}
+
+export type ArticleInputSource =
+  | "full-article"
+  | "rss-excerpt"
+  | "social-post";
 
 export interface ArticleLengthGuide {
   sourceWords: number;
@@ -103,6 +136,6 @@ export interface PostSettings {
 export interface GenerateResponse {
   draft: DraftContent;
   caption: string;
-  item: NewsItem;
+  item: FeedItem;
   model: string;
 }

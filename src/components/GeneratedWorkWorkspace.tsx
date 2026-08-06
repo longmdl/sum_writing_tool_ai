@@ -371,7 +371,11 @@ export default function GeneratedWorkWorkspace({
             <HStack gap={2} wrap="wrap" vAlign="center">
               <Token
                 label={
-                  selected.origin === "manual" ? "Manual Article" : "News Feed"
+                  selected.origin === "manual"
+                    ? "Manual Article"
+                    : selected.sourceName.startsWith("Bluesky ·")
+                      ? "Shitpost Feed"
+                      : "News Feed"
                 }
                 size="sm"
                 color={selected.origin === "manual" ? "blue" : "green"}
