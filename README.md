@@ -121,8 +121,10 @@ generation fails closed so the OpenAI budget cannot be used without rate-limit
 protection.
 
 The Shitpost Feed needs no Reddit API key, but it is deliberately best-effort.
-It makes one request to Reddit's public combined RSS feed, keeps only posts with
-Reddit-hosted media, and reuses an hourly server cache. **Refresh Reddit** asks
+It makes one request to Reddit's combined `new` RSS feed, keeps only posts with
+Reddit-hosted media, interleaves communities round-robin, and reuses an hourly
+server cache. The default mix is `r/carscirclejerk`, `r/formuladank`, and
+`r/WECcirclejerk`. **Refresh Reddit** asks
 for a fresh feed; if Reddit returns `429`, a warm server shows its last good
 result with a warning. RSS exposes video poster images but not a reliable direct
 MP4, so video posts offer a downloadable preview and a link to the original.

@@ -503,7 +503,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
 
       <Section variant="muted" padding={4} dividers={["bottom"]}>
         <Text type="supporting" color="secondary">
-          Top media posts this month · Public RSS, hourly cache · Reddit may throttle manual refreshes.
+          Newest media posts · Balanced round-robin · Public RSS with an hourly cache.
         </Text>
       </Section>
 

@@ -6,16 +6,9 @@ import type { ShitpostItem } from "./types";
 const REDDIT_ORIGIN = "https://www.reddit.com";
 const FEED_TTL_SECONDS = 3_600;
 const DEFAULT_COMMUNITIES = [
-  "formuladank",
-  "CarMemes",
   "carscirclejerk",
-  "Shitty_Car_Mods",
-  "Justrolledintotheshop",
-  "regularcarreviews",
-  "RoastMyCar",
-  "okbuddyf1",
-  "weccirclejerk",
-  "motogpmemes",
+  "formuladank",
+  "WECcirclejerk",
 ] as const;
 
 interface RedditFeedResult {
@@ -178,6 +171,34 @@ function parseAtomFeed(xml: string): ShitpostItem[] {
     .filter((item): item is ShitpostItem => item !== null);
 }
 
+function balanceByCommunity(
+  items: ShitpostItem[],
+  communities: string[],
+  limit: number,
+): ShitpostItem[] {
+  const queues = new Map(
+    communities.map((community) => [
+      community.toLowerCase(),
+      items.filter(
+        (item) => item.subreddit.toLowerCase() === community.toLowerCase(),
+      ),
+    ]),
+  );
+  const balanced: ShitpostItem[] = [];
+  let foundItem = true;
+  while (balanced.length < limit && foundItem) {
+    foundItem = false;
+    for (const community of communities) {
+      const next = queues.get(community.toLowerCase())?.shift();
+      if (!next) continue;
+      balanced.push(next);
+      foundItem = true;
+      if (balanced.length >= limit) break;
+    }
+  }
+  return balanced;
+}
+
 /**
  * Validate a browser-selected RSS item without another anonymous Reddit call.
  * All attribution and URLs are reconstructed from allowlisted fields.
@@ -259,10 +280,9 @@ export async function scrapeShitposts(
 ): Promise<RedditFeedResult> {
   const communities = configuredCommunities();
   const url = new URL(
-    `/r/${communities.map(encodeURIComponent).join("+")}/top/.rss`,
+    `/r/${communities.map(encodeURIComponent).join("+")}/new/.rss`,
     REDDIT_ORIGIN,
   );
-  url.searchParams.set("t", "month");
   url.searchParams.set("limit", "100");
 
   try {
@@ -287,8 +307,9 @@ export async function scrapeShitposts(
     if (items.length === 0) {
       throw new Error("Reddit RSS returned no downloadable media posts.");
     }
+    const cappedLimit = Math.max(1, Math.min(Math.trunc(limit), 50));
     const result = {
-      items: items.slice(0, Math.max(1, Math.min(Math.trunc(limit), 50))),
+      items: balanceByCommunity(items, communities, cappedLimit),
       communities,
     };
     lastGoodFeed = result;
