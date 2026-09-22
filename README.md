@@ -18,7 +18,18 @@ Facebook copy. Give it a natural Vietnamese or mixed-language brief for a
 Qualifying update, Test Race schedule, race result, driver announcement, or
 season launch. It follows `content/sos-style-guide.md`, preserves supplied race
 data exactly, and inserts visible placeholders instead of inventing missing
-details.
+details. Each fresh generation also cross-references the public data on
+`https://sos.sumracing.vn`: the active season, complete participant and
+qualifying tables, calendar status, and available per-round results. Source
+responses are cached for 10 minutes and caption cache keys include the source
+fingerprint, so updated championship data produces a new caption.
+
+The SOS rules are calibrated against the complete supplied Season 1–3 caption
+archive. The generator first identifies the requested post archetype, then
+scales structure and length to the usable facts. Editor-provided facts take
+priority over the live website snapshot, and unresolved essentials remain
+visible placeholders. A rule-version key invalidates older cached SOS captions
+whenever the generation guide changes.
 
 ---
 
@@ -198,6 +209,7 @@ content/sos-style-guide.md  SOS championship caption rules + examples
 src/lib/sources.ts          source registry + each publisher's AI policy
 src/lib/rss.ts              dependency-free RSS reader
 src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
+src/lib/sos-context.ts      cached public SOS season/qualifying/result context
 src/lib/reddit.ts           keyless combined Reddit RSS feed adapter
 src/lib/openai.ts           model call + response validation
 src/lib/caption.ts          deterministic footer assembly

@@ -8,7 +8,12 @@ import {
   consumeFreshGenerationQuota,
   generationRateLimitHeaders,
 } from "@/lib/generation-rate-limit";
-import { DEFAULT_MODEL, generateSosCaption } from "@/lib/openai";
+import {
+  DEFAULT_MODEL,
+  generateSosCaption,
+  SOS_CAPTION_RULE_VERSION,
+} from "@/lib/openai";
+import { loadSosWebsiteContext } from "@/lib/sos-context";
 import type { DraftContent } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -72,11 +77,13 @@ export async function POST(request: Request) {
   }
 
   const forceRegenerate = payload.forceRegenerate === true;
+  const websiteContext = await loadSosWebsiteContext(context);
   const cacheKey = createGeneratedPostCacheKey({
-    version: 1,
+    version: SOS_CAPTION_RULE_VERSION,
     origin: "sos",
     model: DEFAULT_MODEL,
     context,
+    sourceFingerprint: websiteContext.meta.fingerprint,
   });
 
   try {
@@ -88,6 +95,7 @@ export async function POST(request: Request) {
           model: cached.post.model,
           cached: true,
           cacheStatus: cached.status,
+          sourceContext: websiteContext.meta,
         });
       }
     }
@@ -95,7 +103,10 @@ export async function POST(request: Request) {
     const quota = await consumeFreshGenerationQuota(request);
     if (quota.status === "unavailable") {
       return NextResponse.json(
-        { error: "Generation protection is temporarily unavailable. Try again shortly." },
+        {
+          error: "Generation protection is temporarily unavailable. Try again shortly.",
+          sourceContext: websiteContext.meta,
+        },
         { status: 503 },
       );
     }
@@ -104,12 +115,16 @@ export async function POST(request: Request) {
         {
           error:
             "Fresh-generation limit reached: 10 per hour for this IP address. Cached captions remain available.",
+          sourceContext: websiteContext.meta,
         },
         { status: 429, headers: generationRateLimitHeaders(quota) },
       );
     }
 
-    const result = await generateSosCaption({ context });
+    const result = await generateSosCaption({
+      context,
+      websiteContext: websiteContext.promptContext,
+    });
     const cacheStatus = await storeGeneratedPost({
       cacheKey,
       origin: "manual",
@@ -126,6 +141,7 @@ export async function POST(request: Request) {
         model: result.model,
         cached: false,
         cacheStatus,
+        sourceContext: websiteContext.meta,
       },
       { headers: generationRateLimitHeaders(quota) },
     );

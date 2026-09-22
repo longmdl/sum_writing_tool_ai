@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   FlagTriangleRight,
+  Globe2,
   Sparkles,
   Trophy,
 } from "lucide-react";
@@ -56,7 +57,21 @@ interface SosGenerateResponse {
   caption?: string;
   model?: string;
   cached?: boolean;
+  sourceContext?: SosSourceContext;
   error?: string;
+}
+
+interface SosSourceContext {
+  status: "live" | "stale" | "unavailable";
+  sourceUrl: string;
+  fetchedAt: string | null;
+  sourceUpdatedAt: string | null;
+  seasonName: string | null;
+  participantCount: number;
+  qualifyingRoundCount: number;
+  mainRoundCount: number;
+  completedRoundCount: number;
+  scrapedRoundCount: number;
 }
 
 interface SosSessionState {
@@ -64,6 +79,7 @@ interface SosSessionState {
   caption: string;
   model: string | null;
   cached: boolean;
+  sourceContext: SosSourceContext | null;
 }
 
 let sosSessionState: SosSessionState = {
@@ -71,6 +87,7 @@ let sosSessionState: SosSessionState = {
   caption: "",
   model: null,
   cached: false,
+  sourceContext: null,
 };
 
 function CopyCaptionButton({ caption }: { caption: string }) {
@@ -115,7 +132,7 @@ export default function SosCaptionWorkspace({
   const [session, setSession] = useState<SosSessionState>(() => sosSessionState);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { context, caption, model, cached } = session;
+  const { context, caption, model, cached, sourceContext } = session;
 
   function updateSession(patch: Partial<SosSessionState>) {
     setSession((current) => {
@@ -149,6 +166,9 @@ export default function SosCaptionWorkspace({
         }),
       });
       const data = (await response.json()) as SosGenerateResponse;
+      if (data.sourceContext) {
+        updateSession({ sourceContext: data.sourceContext });
+      }
       if (!response.ok || !data.caption) {
         throw new Error(data.error ?? "Không thể generate SOS caption.");
       }
@@ -156,6 +176,7 @@ export default function SosCaptionWorkspace({
         caption: data.caption,
         model: data.model ?? null,
         cached: data.cached === true,
+        sourceContext: data.sourceContext ?? null,
       });
     } catch (generationError) {
       setError(
@@ -193,7 +214,9 @@ export default function SosCaptionWorkspace({
               <Text type="supporting" color="secondary">
                 Viết yêu cầu tự nhiên bằng tiếng Việt hoặc English. Dán đầy đủ
                 tên tay đua, lap time, track, ngày giờ và server details nếu có;
-                tool sẽ dùng placeholder thay vì tự bịa dữ liệu còn thiếu.
+                tool sẽ cross-check dữ liệu công khai mới nhất từ
+                sos.sumracing.vn và dùng placeholder thay vì tự bịa dữ liệu còn
+                thiếu.
               </Text>
             </VStack>
           </Section>
@@ -288,12 +311,41 @@ export default function SosCaptionWorkspace({
                   {cached ? (
                     <Token label="30-day cache" size="sm" color="green" />
                   ) : null}
+                  {sourceContext ? (
+                    <Token
+                      label={
+                        sourceContext.status === "live"
+                          ? "Live SOS data"
+                          : sourceContext.status === "stale"
+                            ? "Stale SOS data"
+                            : "Brief only"
+                      }
+                      size="sm"
+                      color={
+                        sourceContext.status === "live"
+                          ? "green"
+                          : sourceContext.status === "stale"
+                            ? "yellow"
+                            : "gray"
+                      }
+                      icon={<Globe2 size={14} aria-hidden />}
+                      description="Public context from sos.sumracing.vn"
+                    />
+                  ) : null}
                   {model ? <Token label={model} size="sm" color="gray" /> : null}
                   <Text type="supporting" color="secondary" hasTabularNumbers>
                     {captionWords} words · {caption.length} characters
                   </Text>
                 </HStack>
               </HStack>
+
+              {sourceContext ? (
+                <Text type="supporting" color="secondary" hasTabularNumbers>
+                  Context: {sourceContext.participantCount} drivers ·{" "}
+                  {sourceContext.qualifyingRoundCount} qualifying tracks ·{" "}
+                  {sourceContext.scrapedRoundCount} result rounds
+                </Text>
+              ) : null}
 
               <TextArea
                 label="Generated SOS caption"
