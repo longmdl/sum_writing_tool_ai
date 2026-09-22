@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   // it from the import graph. Without this it is missing in the Vercel bundle.
   outputFileTracingIncludes: {
     "/api/generate": ["./content/**/*"],
+    "/api/generate/manual": ["./content/**/*"],
+    "/api/generate/sos": ["./content/**/*"],
   },
 };
 

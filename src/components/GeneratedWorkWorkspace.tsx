@@ -353,7 +353,7 @@ export default function GeneratedWorkWorkspace({
               description={
                 query
                   ? "Try a broader title, source, or caption search."
-                  : "Generate a caption from News Feed or Manual Article and it will appear here."
+                  : "Generate from News Feed, Shitpost Feed, SOS, or Manual Article and it will appear here."
               }
               icon={<Database size={32} />}
             />
@@ -372,13 +372,21 @@ export default function GeneratedWorkWorkspace({
               <Token
                 label={
                   selected.origin === "manual"
-                    ? "Manual Article"
+                    ? selected.sourceName === "SUM Open Series"
+                      ? "SOS Caption"
+                      : "Manual Article"
                     : selected.sourceName.startsWith("Reddit ·")
                       ? "Shitpost Feed"
                       : "News Feed"
                 }
                 size="sm"
-                color={selected.origin === "manual" ? "blue" : "green"}
+                color={
+                  selected.sourceName === "SUM Open Series"
+                    ? "green"
+                    : selected.origin === "manual"
+                      ? "blue"
+                      : "green"
+                }
               />
               <Token label={selected.sourceName} size="sm" color="gray" />
               {selected.model ? (

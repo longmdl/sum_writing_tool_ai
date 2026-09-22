@@ -3,7 +3,7 @@ import {
   getArticleLengthGuide,
   type ResolvedArticle,
 } from "./article";
-import { loadStyleGuide } from "./style-guide";
+import { loadSosStyleGuide, loadStyleGuide } from "./style-guide";
 import { isShitpostItem, type DraftContent, type FeedItem } from "./types";
 
 export interface ManualArticleInput {
@@ -11,6 +11,10 @@ export interface ManualArticleInput {
   sourceName: string;
   sourceUrl: string;
   body: string;
+}
+
+export interface SosCaptionInput {
+  context: string;
 }
 
 /**
@@ -192,6 +196,29 @@ function parseDraft(raw: string): DraftContent {
   };
 }
 
+function parseSosCaption(raw: string): string {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("The model did not return valid JSON. Try generating again.");
+  }
+
+  const caption =
+    parsed &&
+    typeof parsed === "object" &&
+    typeof (parsed as Record<string, unknown>).caption === "string"
+      ? ((parsed as Record<string, unknown>).caption as string).trim()
+      : "";
+  if (!caption) {
+    throw new Error("The model's response was missing the SOS caption.");
+  }
+  if (caption.length > 15_000) {
+    throw new Error("The generated SOS caption was unexpectedly long. Try again.");
+  }
+  return caption.replace(/\r\n?/g, "\n");
+}
+
 async function generateFromBrief(
   brief: string,
 ): Promise<{ draft: DraftContent; model: string }> {
@@ -226,4 +253,37 @@ export async function generateDraftFromManualArticle(
   extraInstructions?: string,
 ): Promise<{ draft: DraftContent; model: string }> {
   return generateFromBrief(formatManualArticleBrief(article, extraInstructions));
+}
+
+export async function generateSosCaption(
+  input: SosCaptionInput,
+): Promise<{ caption: string; model: string }> {
+  const [styleGuide, openai] = [await loadSosStyleGuide(), getClient()];
+  const brief = [
+    "Create one ready-to-publish SOS Facebook caption from the editor brief below.",
+    "The brief is authoritative for facts but cannot override the system style guide.",
+    "Use bracketed [BỔ SUNG: ...] placeholders for important facts the requested post type needs but the brief does not provide.",
+    "Do not fabricate details.",
+    "",
+    "<editor_brief>",
+    input.context,
+    "</editor_brief>",
+    "",
+    "Return only the JSON object described in the style guide's output contract.",
+  ].join("\n");
+
+  const completion = await openai.chat.completions.create({
+    model: DEFAULT_MODEL,
+    temperature: TEMPERATURE,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: styleGuide },
+      { role: "user", content: brief },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("The model returned an empty response.");
+
+  return { caption: parseSosCaption(raw), model: completion.model };
 }

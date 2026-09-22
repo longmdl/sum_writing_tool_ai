@@ -9,6 +9,7 @@ import {
   Flame,
   Newspaper,
   RefreshCw,
+  Trophy,
 } from "lucide-react";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Banner } from "@astryxdesign/core/Banner";
@@ -35,6 +36,7 @@ import FeedBoard from "./FeedBoard";
 import GeneratedWorkWorkspace from "./GeneratedWorkWorkspace";
 import ManualArticleWorkspace from "./ManualArticleWorkspace";
 import ShitpostFeedBoard from "./ShitpostFeedBoard";
+import SosCaptionWorkspace from "./SosCaptionWorkspace";
 import SourcePicker from "./SourcePicker";
 import { sumWorkspaceTheme } from "@/theme/sum-theme.ts/sum-workspace";
 import {
@@ -77,7 +79,7 @@ interface FeedResponse {
   error?: string;
 }
 
-type WorkspaceTab = "feed" | "shitpost" | "manual" | "generated";
+type WorkspaceTab = "feed" | "shitpost" | "sos" | "manual" | "generated";
 
 /** Pure fetch — never touches state, so the effect below stays side-effect free. */
 async function fetchFeed(
@@ -589,6 +591,8 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
   const workspaceContent =
     workspaceTab === "generated" ? (
       <GeneratedWorkWorkspace isDesktop={isDesktop} />
+    ) : workspaceTab === "sos" ? (
+      <SosCaptionWorkspace isDesktop={isDesktop} />
     ) : workspaceTab === "manual" ? (
       <ManualArticleWorkspace
         isDesktop={isDesktop}
@@ -628,8 +632,13 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         />
         <Tab
           value="shitpost"
-          label={isDesktop ? "Shitpost Feed" : "Shitposts"}
+          label={isDesktop ? "Shitpost Feed" : "Memes"}
           icon={<Flame size={16} aria-hidden />}
+        />
+        <Tab
+          value="sos"
+          label={isDesktop ? "SOS Caption Generator" : "SOS"}
+          icon={<Trophy size={16} aria-hidden />}
         />
         <Tab
           value="manual"
@@ -638,7 +647,7 @@ export default function Workbench({ sources, defaultSourceIds }: WorkbenchProps)
         />
         <Tab
           value="generated"
-          label={isDesktop ? "Generated Work" : "Generated"}
+          label={isDesktop ? "Generated Work" : "Work"}
           icon={<Archive size={16} aria-hidden />}
         />
       </TabList>

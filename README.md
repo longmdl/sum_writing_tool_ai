@@ -13,6 +13,13 @@ pipeline as editorial news.
 The point is speed: an admin picks a story off the board, hits generate, tweaks a
 line or two, copies the caption, grabs the image, and posts.
 
+The **SOS Caption Generator** is a dedicated workspace for SUM GT3 Open Series
+Facebook copy. Give it a natural Vietnamese or mixed-language brief for a
+Qualifying update, Test Race schedule, race result, driver announcement, or
+season launch. It follows `content/sos-style-guide.md`, preserves supplied race
+data exactly, and inserts visible placeholders instead of inventing missing
+details.
+
 ---
 
 ## How it works
@@ -187,6 +194,7 @@ that the style guide is missing at runtime and generation fails.
 
 ```
 content/style-guide.md      the writing rules — edit this, not the code
+content/sos-style-guide.md  SOS championship caption rules + examples
 src/lib/sources.ts          source registry + each publisher's AI policy
 src/lib/rss.ts              dependency-free RSS reader
 src/lib/scraper.ts          fetch, merge, dedupe, rank, enrich
@@ -199,6 +207,7 @@ src/app/api/feed/           GET  the 50-story mixed queue
 src/app/api/shitposts/      GET  curated Reddit RSS media queue
 src/app/api/media/download  GET  allowlisted Reddit image download proxy
 src/app/api/generate/       POST a story id → caption
+src/app/api/generate/sos/   POST an SOS editor brief → Facebook caption
 src/app/api/generated-posts GET/DELETE cached Generated Work
 src/components/             timing board (dark) + composer (paper)
 ```
