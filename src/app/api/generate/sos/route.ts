@@ -77,7 +77,8 @@ export async function POST(request: Request) {
   }
 
   const forceRegenerate = payload.forceRegenerate === true;
-  const websiteContext = await loadSosWebsiteContext(context);
+  const useLiveData = payload.useLiveData !== false;
+  const websiteContext = await loadSosWebsiteContext(context, useLiveData);
   const cacheKey = createGeneratedPostCacheKey({
     version: SOS_CAPTION_RULE_VERSION,
     origin: "sos",

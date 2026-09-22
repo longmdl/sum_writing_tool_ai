@@ -90,7 +90,7 @@ interface SosSnapshot {
 }
 
 export interface SosContextMeta {
-  status: "live" | "stale" | "unavailable";
+  status: "live" | "stale" | "unavailable" | "disabled";
   sourceUrl: string;
   fetchedAt: string | null;
   sourceUpdatedAt: string | null;
@@ -753,7 +753,18 @@ function contextMeta(
 
 export async function loadSosWebsiteContext(
   editorBrief: string,
+  enabled = true,
 ): Promise<SosWebsiteContext> {
+  if (!enabled) {
+    return {
+      promptContext: "",
+      meta: {
+        ...contextMeta(null, "disabled"),
+        fingerprint: "disabled",
+      },
+    };
+  }
+
   const loaded = await loadSnapshot();
   if (!loaded.snapshot) {
     return {

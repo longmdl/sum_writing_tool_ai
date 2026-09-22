@@ -23,6 +23,8 @@ details. Each fresh generation also cross-references the public data on
 qualifying tables, calendar status, and available per-round results. Source
 responses are cached for 10 minutes and caption cache keys include the source
 fingerprint, so updated championship data produces a new caption.
+Admins can turn **Use live SOS data** off for a brief-only generation; that
+skips the website request and uses a separate caption cache entry.
 
 The SOS rules are calibrated against the complete supplied Season 1–3 caption
 archive. The generator first identifies the requested post archetype, then

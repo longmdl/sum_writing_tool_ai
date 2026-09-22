@@ -2,16 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  BookOpenCheck,
   CalendarClock,
   Check,
   Copy,
   FlagTriangleRight,
+  Gauge,
+  Gift,
   Globe2,
+  MapPinned,
+  Megaphone,
   Sparkles,
   Trophy,
+  UsersRound,
 } from "lucide-react";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { FormLayout } from "@astryxdesign/core/FormLayout";
 import { Heading } from "@astryxdesign/core/Heading";
@@ -34,10 +41,34 @@ const MAX_CONTEXT_CHARS = 12_000;
 
 const STARTERS = [
   {
+    label: "Season launch",
+    icon: <Megaphone size={16} aria-hidden />,
+    value:
+      "Hãy viết caption chính thức khởi động mùa giải SOS mới. Season: [điền]. Hãy trình bày các thay đổi về hạng PRO/AM/JR, thể thức tính điểm, số chặng, lịch Qualifying, link điều lệ và link đăng ký từ dữ liệu tôi cung cấp hoặc live SOS data nếu bật.",
+  },
+  {
+    label: "Qualifying update",
+    icon: <Gauge size={16} aria-hidden />,
+    value:
+      "Hãy viết Nhật ký Qualifying SOS mới nhất. Nếu live SOS data đang bật, dùng đúng số tay đua tham gia, fastest lap từng track và top 3 hiện tại. Giữ nguyên tên, lap time và điểm; không tự bịa dữ liệu còn thiếu.",
+  },
+  {
     label: "Qualifying results",
     icon: <Trophy size={16} aria-hidden />,
     value:
-      "Hãy làm cho tôi một caption để thông báo kết quả vòng loại SOS. Season: [điền]. Track: [điền]. Top 3 và lap time: [dán dữ liệu tại đây].",
+      "Hãy viết caption công bố kết quả Qualifying SOS. Season và Qualifying round: [điền]. Dùng đúng thứ tự tay đua, lap time, tổng điểm và trạng thái qualified từ brief hoặc live SOS data nếu bật. Nêu rõ bước tiếp theo của mùa giải nếu có.",
+  },
+  {
+    label: "Circuit preview",
+    icon: <MapPinned size={16} aria-hidden />,
+    value:
+      "Hãy viết caption giới thiệu chặng đua SOS sắp tới. Round: [điền]. Track: [điền]. Bối cảnh mùa giải, đặc điểm track, thử thách, ngày giờ, format và livestream: [dán dữ liệu tại đây]. Chỉ dùng circuit facts được cung cấp.",
+  },
+  {
+    label: "Track guide",
+    icon: <BookOpenCheck size={16} aria-hidden />,
+    value:
+      "Hãy viết caption Track Guide SOS cho [track]. Các corner, braking point, kỹ thuật, setup note và video guide: [dán dữ liệu tại đây]. Kết bài bằng thông tin chặng đua đã được xác nhận; không lấy nhầm chi tiết từ track khác.",
   },
   {
     label: "Test Race schedule",
@@ -46,10 +77,28 @@ const STARTERS = [
       "Hãy cho tôi caption để thông báo lịch Test Race SOS tại Laguna Seca. Season: [điền]. Ngày, giờ check-in, qualifying, race start, server và pass: [dán thông tin tại đây].",
   },
   {
+    label: "Driver lineup",
+    icon: <UsersRound size={16} aria-hidden />,
+    value:
+      "Hãy viết caption công bố danh sách tay đua chính thức của SOS. Season và số lượng tay đua: [điền]. Danh sách theo hạng PRO/AM/JR hoặc thông tin trên poster: [dán tại đây]. Nếu danh sách đã nằm trên poster, giữ caption ngắn gọn và mời khán giả xem graphic.",
+  },
+  {
     label: "Race results",
     icon: <FlagTriangleRight size={16} aria-hidden />,
     value:
       "Hãy làm caption công bố kết quả chặng đua SOS. Round và track: [điền]. Podium từng hạng PRO, AM, JR và các điểm thưởng: [dán kết quả tại đây].",
+  },
+  {
+    label: "Prizes & sponsors",
+    icon: <Gift size={16} aria-hidden />,
+    value:
+      "Hãy viết caption công bố giải thưởng và cảm ơn nhà tài trợ cho SOS. Season: [điền]. Liệt kê chính xác từng phần thưởng, giá trị, điều kiện nhận, hạng đấu và nhà tài trợ: [dán dữ liệu tại đây].",
+  },
+  {
+    label: "Rules update",
+    icon: <BookOpenCheck size={16} aria-hidden />,
+    value:
+      "Hãy viết caption thông báo điều lệ hoặc vận hành SOS. Nội dung thay đổi, hành động tay đua phải thực hiện, deadline, link điều lệ và yêu cầu Discord: [dán dữ liệu tại đây]. Giữ giọng văn rõ ràng, chính thức và không thêm quy định cũ.",
   },
 ] as const;
 
@@ -62,7 +111,7 @@ interface SosGenerateResponse {
 }
 
 interface SosSourceContext {
-  status: "live" | "stale" | "unavailable";
+  status: "live" | "stale" | "unavailable" | "disabled";
   sourceUrl: string;
   fetchedAt: string | null;
   sourceUpdatedAt: string | null;
@@ -76,6 +125,7 @@ interface SosSourceContext {
 
 interface SosSessionState {
   context: string;
+  useLiveData: boolean;
   caption: string;
   model: string | null;
   cached: boolean;
@@ -84,6 +134,7 @@ interface SosSessionState {
 
 let sosSessionState: SosSessionState = {
   context: "",
+  useLiveData: true,
   caption: "",
   model: null,
   cached: false,
@@ -132,7 +183,7 @@ export default function SosCaptionWorkspace({
   const [session, setSession] = useState<SosSessionState>(() => sosSessionState);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { context, caption, model, cached, sourceContext } = session;
+  const { context, useLiveData, caption, model, cached, sourceContext } = session;
 
   function updateSession(patch: Partial<SosSessionState>) {
     setSession((current) => {
@@ -162,6 +213,7 @@ export default function SosCaptionWorkspace({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           context,
+          useLiveData,
           forceRegenerate: Boolean(caption),
         }),
       });
@@ -213,10 +265,9 @@ export default function SosCaptionWorkspace({
               <Text type="label">Brief in, Facebook caption out</Text>
               <Text type="supporting" color="secondary">
                 Viết yêu cầu tự nhiên bằng tiếng Việt hoặc English. Dán đầy đủ
-                tên tay đua, lap time, track, ngày giờ và server details nếu có;
-                tool sẽ cross-check dữ liệu công khai mới nhất từ
-                sos.sumracing.vn và dùng placeholder thay vì tự bịa dữ liệu còn
-                thiếu.
+                tên tay đua, lap time, track, ngày giờ và server details nếu có.
+                Bật live data để cross-check sos.sumracing.vn; dữ liệu chưa có
+                sẽ được giữ bằng placeholder rõ ràng.
               </Text>
             </VStack>
           </Section>
@@ -270,6 +321,18 @@ export default function SosCaptionWorkspace({
               }
               onChange={(value) => updateSession({ context: value })}
             />
+            <CheckboxInput
+              label="Use live SOS data"
+              description={
+                useLiveData
+                  ? "Cross-check season, participants, Qualifying, calendar and available results from sos.sumracing.vn."
+                  : "Generate only from the brief above; no SOS website request will be made."
+              }
+              value={useLiveData}
+              onChange={(value) =>
+                updateSession({ useLiveData: value, sourceContext: null })
+              }
+            />
           </FormLayout>
 
           {error ? (
@@ -318,7 +381,9 @@ export default function SosCaptionWorkspace({
                           ? "Live SOS data"
                           : sourceContext.status === "stale"
                             ? "Stale SOS data"
-                            : "Brief only"
+                            : sourceContext.status === "disabled"
+                              ? "Live data off"
+                              : "Brief only"
                       }
                       size="sm"
                       color={
@@ -329,7 +394,11 @@ export default function SosCaptionWorkspace({
                             : "gray"
                       }
                       icon={<Globe2 size={14} aria-hidden />}
-                      description="Public context from sos.sumracing.vn"
+                      description={
+                        sourceContext.status === "disabled"
+                          ? "Generated from the editor brief only"
+                          : "Public context from sos.sumracing.vn"
+                      }
                     />
                   ) : null}
                   {model ? <Token label={model} size="sm" color="gray" /> : null}
@@ -339,7 +408,9 @@ export default function SosCaptionWorkspace({
                 </HStack>
               </HStack>
 
-              {sourceContext ? (
+              {sourceContext &&
+              (sourceContext.status === "live" ||
+                sourceContext.status === "stale") ? (
                 <Text type="supporting" color="secondary" hasTabularNumbers>
                   Context: {sourceContext.participantCount} drivers ·{" "}
                   {sourceContext.qualifyingRoundCount} qualifying tracks ·{" "}
